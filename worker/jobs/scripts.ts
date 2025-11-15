@@ -83,7 +83,7 @@ export async function registerScriptProcessor(job: Job<BaseJobPayload>) {
           body: JSON.stringify({
             model,
             input: prompt,
-            system: systemPrompt,
+            instructions: systemPrompt,
             max_output_tokens: 600,
           }),
         });

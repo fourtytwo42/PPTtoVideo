@@ -222,6 +222,21 @@ const ActionButton = styled.button<{ $variant?: 'primary' | 'outline' }>`
   pointer-events: ${({ disabled }) => (disabled ? 'none' : 'auto')};
 `;
 
+const SlideVisual = styled.div`
+  background: rgba(5, 3, 14, 0.55);
+  border-radius: ${({ theme }) => theme.radius.md};
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 0.5rem;
+`;
+
+const SlideImage = styled.img`
+  width: 100%;
+  display: block;
+  border-radius: ${({ theme }) => theme.radius.sm};
+  background: rgba(9, 7, 18, 0.8);
+  object-fit: contain;
+`;
+
 const MediaPreview = styled.div`
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: ${({ theme }) => theme.radius.md};
@@ -247,6 +262,13 @@ const MediaLabel = styled.span`
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: rgba(213, 210, 255, 0.75);
+`;
+
+const FieldLabel = styled.span`
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(213, 210, 255, 0.68);
 `;
 
 interface VoiceOption {
@@ -326,6 +348,11 @@ export default function DeckWorkspaceClient({
     ? [{ id: deck.voiceId, name: deck.voiceLabel ?? deck.voiceId }]
     : [];
   const currentVoiceId = deck.voiceId ?? voiceOptions[0]?.id ?? '';
+
+  const slideImageUrl = useMemo(() => {
+    if (!selectedSlide) return null;
+    return `/api/decks/${deck.id}/slides/${selectedSlide.id}/image?v=${deck.slideCount}-${selectedSlide.index}`;
+  }, [deck.id, deck.slideCount, selectedSlide]);
 
   const slideAudioUrl = useMemo(() => {
     if (!selectedSlide || selectedSlide.audioStatus !== 'READY') {
@@ -743,6 +770,14 @@ export default function DeckWorkspaceClient({
               <h2 style={{ margin: 0, fontSize: '1.4rem' }}>{selectedSlide.title ?? `Slide ${selectedSlide.index}`}</h2>
               <p style={{ margin: 0, color: 'rgba(213,210,255,0.75)' }}>{selectedSlide.body}</p>
             </div>
+            {slideImageUrl && (
+              <div style={{ display: 'grid', gap: '0.35rem' }}>
+                <FieldLabel>Slide image</FieldLabel>
+                <SlideVisual>
+                  <SlideImage src={slideImageUrl} alt={selectedSlide.title ?? `Slide ${selectedSlide.index}`} />
+                </SlideVisual>
+              </div>
+            )}
             <SelectionInfo>
               <SelectionBadge>
                 {selectionCount} selected / {deck.slideCount}
@@ -765,15 +800,18 @@ export default function DeckWorkspaceClient({
                 Clear selection
               </ActionButton>
             </SelectionInfo>
-            <Textarea
-              value={scriptDrafts[selectedSlide.id] ?? ''}
-              onChange={(event) =>
-                setScriptDrafts((drafts) => ({
-                  ...drafts,
-                  [selectedSlide.id]: event.target.value,
-                }))
-              }
-            />
+            <div style={{ display: 'grid', gap: '0.35rem' }}>
+              <FieldLabel>Script text</FieldLabel>
+              <Textarea
+                value={scriptDrafts[selectedSlide.id] ?? ''}
+                onChange={(event) =>
+                  setScriptDrafts((drafts) => ({
+                    ...drafts,
+                    [selectedSlide.id]: event.target.value,
+                  }))
+                }
+              />
+            </div>
             <ActionRow>
               <ActionButton onClick={() => handleSave(selectedSlide.id)} disabled={saving}>
                 {saving ? 'Saving…' : 'Save script'}
