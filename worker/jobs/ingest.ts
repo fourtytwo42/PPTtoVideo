@@ -51,6 +51,8 @@ export async function registerIngestionProcessor(job: Job<BaseJobPayload>) {
     const sourceFile = deck.sourcePath;
     const buffer = await fs.promises.readFile(sourceFile);
 
+    await prisma.audioAsset.deleteMany({ where: { deckId: deck.id } });
+    await prisma.videoAsset.deleteMany({ where: { deckId: deck.id } });
     await prisma.slide.deleteMany({ where: { deckId: deck.id } });
 
     let slides: { index: number; title?: string; body?: string; notes?: string }[] = [];
@@ -287,10 +289,29 @@ function renderPage(pageData: any) {
 async function renderPptxSlides(deckId: string, sourceFile: string) {
   const tmpDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "deckforge-pptx-"));
   const libreoffice = process.env.LIBREOFFICE_PATH ?? "soffice";
-  await runCommand(libreoffice, ["--headless", "--convert-to", "png", "--outdir", tmpDir, sourceFile]);
-  const files = await fs.promises.readdir(tmpDir);
+  const pdftoppng = process.env.PDFTOPNG_PATH ?? "pdftoppm";
+
+  await runCommand(libreoffice, ["--headless", "--convert-to", "pdf", "--outdir", tmpDir, sourceFile]);
+  const generated = await fs.promises.readdir(tmpDir);
+  const pdfName = generated.find((file) => file.toLowerCase().endsWith(".pdf"));
+  if (!pdfName) {
+    throw new Error("Unable to convert PPTX to PDF for slide rendering.");
+  }
+
+  const pdfPath = path.join(tmpDir, pdfName);
+  const prefix = path.join(tmpDir, "slide");
+  await runCommand(pdftoppng, ["-png", pdfPath, prefix]);
+
+  const pngFiles = (await fs.promises.readdir(tmpDir))
+    .filter((file) => file.startsWith("slide") && file.toLowerCase().endsWith(".png"))
+    .sort();
+
+  if (!pngFiles.length) {
+    throw new Error("Unable to rasterize PPTX slides to PNG.");
+  }
+
   let index = 1;
-  for (const file of files.sort()) {
+  for (const file of pngFiles) {
     const target = slideImagePath(deckId, index);
     await fs.promises.copyFile(path.join(tmpDir, file), target);
     index += 1;

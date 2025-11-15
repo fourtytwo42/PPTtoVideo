@@ -96,7 +96,7 @@ model Slide {
 
 model Script {
   id            String   @id @default(cuid())
-  slide         Slide    @relation(fields: [slideId], references: [id])
+  slide         Slide    @relation(fields: [slideId], references: [id], onDelete: Cascade)
   slideId       String   @unique
   content       String
   language      String   @default("en")
