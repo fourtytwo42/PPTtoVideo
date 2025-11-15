@@ -8,7 +8,7 @@ A production-oriented Next.js application that now couples a cinematic product t
 - **styled-components** for expressive theming and custom UI (no Tailwind)
 - **Prisma ORM** targeting PostgreSQL for persistent state
 - **BullMQ + Redis** for background job orchestration
-- **FFmpeg/ffprobe, LibreOffice, pdftoppm** for document rendering, duration probing, and video assembly (CLI dependencies)
+- **FFmpeg/ffprobe, LibreOffice, pdftoppm, tesseract-ocr** for document rendering, OCR fallback, duration probing, and video assembly (CLI dependencies)
 - **OpenAI Responses API** and **ElevenLabs TTS** integrations
 
 ## Getting started
@@ -37,7 +37,7 @@ Configure environment variables as described in `.env.example`:
 - `FILE_STORAGE_ROOT` writable directory for source files and rendered media
 - `OPENAI_API_KEY` and `ELEVENLABS_API_KEY` to enable script and narration generation
 - `NEXTAUTH_URL` and `NEXTAUTH_SECRET` for credential-based sessions via NextAuth
-- Optional overrides for LibreOffice, pdftoppm, FFmpeg, and ffprobe binaries (`LIBREOFFICE_PATH`, `PDFTOPNG_PATH`, `FFMPEG_PATH`, `FFPROBE_PATH`)
+- Optional overrides for LibreOffice, pdftoppm, FFmpeg, ffprobe, and Tesseract binaries (`LIBREOFFICE_PATH`, `PDFTOPNG_PATH`, `FFMPEG_PATH`, `FFPROBE_PATH`, `TESSERACT_PATH`)
 
 Once services are running visit `http://localhost:3000` for the marketing tour, or jump directly to:
 
@@ -47,6 +47,7 @@ Once services are running visit `http://localhost:3000` for the marketing tour, 
 - `/deck/[deckId]` for the collaborative script workspace and pipeline triggers
 - `/api/decks/:deckId/final` (stream) and `/api/decks/:deckId/slides/:slideId/{audio|video}` (download) to retrieve rendered assets
 - `/admin` for model defaults, limit configuration, and audit history (admins only)
+- `npx tsx scripts/manual-queue-scripts.ts <deckId>` to manually enqueue a script-regeneration job for diagnostics
 
 ## Production operations
 
@@ -116,7 +117,7 @@ prisma/
 
 ## Production concerns
 
-- **Document ingestion** depends on LibreOffice (`soffice`) for PPTX rasterization and `pdftoppm` for PDF image rendering. Ensure those binaries are available on worker hosts.
+- **Document ingestion** depends on LibreOffice (`soffice`) for PPTX rasterization, `pdftoppm` for PDF image rendering, and `tesseract-ocr` for low-text OCR fallbacks. Ensure those binaries are available on worker hosts (override with `LIBREOFFICE_PATH`, `PDFTOPNG_PATH`, and `TESSERACT_PATH` if needed).
 - **FFmpeg + ffprobe** are required for slide video creation, duration capture, and final assembly. Configure the `FFMPEG_PATH` / `FFPROBE_PATH` environment variables if the binaries are not on the default PATH.
 - Workers assume Redis availability for BullMQ. Scale worker processes horizontally as job volume increases.
 - The admin console persists defaults and limits via `SystemSetting`; seed sensible defaults during deployment.

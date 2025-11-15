@@ -70,6 +70,8 @@ export type WorkspaceDeck = {
     scriptStatus: ScriptStatus;
     audioStatus: AssetStatus;
     videoStatus: AssetStatus;
+    needsImageContext: boolean;
+    ocrText: string | null;
   }[];
 };
 
@@ -208,6 +210,8 @@ export function buildWorkspaceDeck(deck: WorkspaceDeckSource): WorkspaceDeck {
       scriptStatus: slide.script?.status ?? ScriptStatus.READY,
       audioStatus: slide.audioAsset?.status ?? AssetStatus.PENDING,
       videoStatus: slide.videoAsset?.status ?? AssetStatus.PENDING,
+      needsImageContext: slide.needsImageContext,
+      ocrText: slide.ocrText ?? null,
     })),
   };
 }

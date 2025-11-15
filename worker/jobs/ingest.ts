@@ -21,6 +21,9 @@ import { DeckStatus, SourceType, ProcessingMode, JobType, JobStatus } from "@pri
 import { getSoftLimits } from "../../lib/settings";
 
 const parser = new XMLParser({ ignoreAttributes: false, removeNSPrefix: true });
+const MIN_TEXT_LENGTH = 100;
+const OCR_LANG = process.env.TESSERACT_LANG ?? "eng";
+const OCR_ENABLED = process.env.DISABLE_OCR?.toLowerCase() !== "true";
 
 export async function registerIngestionProcessor(job: Job<BaseJobPayload>) {
   const { jobId, deckId, userId } = job.data;
@@ -71,16 +74,20 @@ export async function registerIngestionProcessor(job: Job<BaseJobPayload>) {
       }
     }
 
+    const enrichedSlides = await Promise.all(
+      slides.map((slide) => enrichSlideContent(deck.id, slide))
+    );
+
     await prisma.deck.update({
       where: { id: deck.id },
       data: {
-        slideCount: slides.length,
+        slideCount: enrichedSlides.length,
         warnings,
       },
     });
 
     let processed = 0;
-    for (const slide of slides) {
+    for (const slide of enrichedSlides) {
       const created = await prisma.slide.create({
         data: {
           deckId: deck.id,
@@ -89,6 +96,8 @@ export async function registerIngestionProcessor(job: Job<BaseJobPayload>) {
           body: slide.body ?? null,
           speakerNotes: slide.notes ?? null,
           imagePath: slideImagePath(deck.id, slide.index),
+          ocrText: slide.ocrText ?? null,
+          needsImageContext: slide.needsImageContext,
         },
       });
 
@@ -100,7 +109,7 @@ export async function registerIngestionProcessor(job: Job<BaseJobPayload>) {
       });
 
       processed += 1;
-      await markJobProgress(jobId, processed, slides.length);
+      await markJobProgress(jobId, processed, enrichedSlides.length);
     }
 
     const nextStatus = deck.mode === ProcessingMode.ONE_SHOT ? DeckStatus.GENERATING : DeckStatus.READY_FOR_REVIEW;
@@ -148,9 +157,68 @@ function formatError(error: unknown) {
   return typeof error === "string" ? error : "Unknown error";
 }
 
-function buildInitialScript(slide: { title?: string; body?: string; notes?: string }) {
+function buildInitialScript(slide: { title?: string; body?: string | null; notes?: string | null }) {
   const parts = [slide.title, slide.body, slide.notes].filter(Boolean);
   return parts.join("\n\n");
+}
+
+async function enrichSlideContent(
+  deckId: string,
+  slide: { index: number; title?: string; body?: string; notes?: string },
+) {
+  const baseSegments = [slide.body ?? "", slide.notes ?? ""].filter((value) => value && value.trim().length > 0);
+  let combinedBody = baseSegments.length ? baseSegments.join("\n\n") : slide.body ?? "";
+
+  let ocrText: string | null = null;
+  let needsImageContext = false;
+
+  if (textLength(combinedBody, slide.notes) < MIN_TEXT_LENGTH) {
+    ocrText = await extractTextFromImage(deckId, slide.index);
+    if (ocrText && ocrText.length > 0) {
+      combinedBody = [combinedBody, ocrText].filter((value) => value && value.trim().length > 0).join("\n\n");
+    }
+  }
+
+  needsImageContext = textLength(combinedBody, slide.notes) < MIN_TEXT_LENGTH;
+
+  return {
+    ...slide,
+    body: combinedBody || null,
+    ocrText: ocrText && ocrText.length > 0 ? ocrText : null,
+    needsImageContext,
+  };
+}
+
+function textLength(body?: string | null, notes?: string | null) {
+  return (body?.length ?? 0) + (notes?.length ?? 0);
+}
+
+async function extractTextFromImage(deckId: string, slideIndex: number) {
+  if (!OCR_ENABLED) {
+    return "";
+  }
+  const imagePath = slideImagePath(deckId, slideIndex);
+  try {
+    await fs.promises.access(imagePath, fs.constants.R_OK);
+  } catch {
+    return "";
+  }
+
+  const tesseract = process.env.TESSERACT_PATH ?? "tesseract";
+  const tmpBase = path.join(os.tmpdir(), `deckforge-ocr-${deckId}-${slideIndex}-${Date.now()}`);
+  const outputBase = `${tmpBase}-out`;
+  const outputTxt = `${outputBase}.txt`;
+
+  try {
+    await runCommand(tesseract, [imagePath, outputBase, "-l", OCR_LANG, "--psm", "6"]);
+    const text = await fs.promises.readFile(outputTxt, "utf8");
+    return text.trim();
+  } catch (error) {
+    console.warn(`[ingestion] OCR failed for deck ${deckId} slide ${slideIndex}`, error);
+    return "";
+  } finally {
+    await fs.promises.rm(outputTxt, { force: true }).catch(() => undefined);
+  }
 }
 
 async function extractSlidesFromPptx(buffer: Buffer) {

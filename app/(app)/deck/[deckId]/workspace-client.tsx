@@ -776,6 +776,11 @@ export default function DeckWorkspaceClient({
                 <SlideVisual>
                   <SlideImage src={slideImageUrl} alt={selectedSlide.title ?? `Slide ${selectedSlide.index}`} />
                 </SlideVisual>
+                {selectedSlide.needsImageContext && (
+                  <span style={{ fontSize: '0.8rem', color: '#FFD18A' }}>
+                    AI reference includes this image due to limited captured text.
+                  </span>
+                )}
               </div>
             )}
             <SelectionInfo>

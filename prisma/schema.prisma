@@ -86,6 +86,8 @@ model Slide {
   embeddedVideo String?
   audioAsset    AudioAsset?
   videoAsset    VideoAsset?
+  ocrText       String?
+  needsImageContext Boolean  @default(false)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
