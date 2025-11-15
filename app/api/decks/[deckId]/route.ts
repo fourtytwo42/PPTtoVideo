@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma, Prisma } from "../../../../lib/prisma";
 import { enqueueJob } from "../../../../lib/jobs/queue";
 import { getCurrentUser } from "../../../../lib/auth";
-import { JobType } from "@prisma/client";
+import { JobType, ProcessingMode } from "@prisma/client";
 import { assertWithinConcurrencyLimit } from "../../../../lib/jobs/concurrency";
 import { buildWorkspaceDeck } from "../../../../lib/decks";
 import { getElevenLabsModelAllowlist, getOpenAIModelAllowlist, findVoiceById } from "../../../../lib/settings";
@@ -52,6 +52,19 @@ export async function POST(request: NextRequest, { params }: { params: { deckId:
   const deck = await prisma.deck.findFirst({ where: { id: params.deckId, ownerId: user.id } });
   if (!deck) {
     return NextResponse.json({ error: "Deck not found" }, { status: 404 });
+  }
+
+  if (
+    body.action === "generate" &&
+    ["audio", "video", "final"].includes(body.target) &&
+    deck.mode === ProcessingMode.REVIEW
+  ) {
+    return NextResponse.json(
+      {
+        error: "Media generation is disabled while this deck is in review-first mode. Switch to one-shot to continue.",
+      },
+      { status: 400 },
+    );
   }
 
   const requestedSlideIds = parseSlideIds(body.slideIds);
@@ -202,6 +215,12 @@ export async function PATCH(request: NextRequest, { params }: { params: { deckId
     if (voice.settings) {
       updates.voiceSettings = voice.settings as Prisma.InputJsonValue;
     }
+  }
+
+  if (body.mode === ProcessingMode.REVIEW || body.mode === ProcessingMode.ONE_SHOT) {
+    updates.mode = body.mode;
+  } else if (body.mode !== undefined) {
+    return NextResponse.json({ error: "Invalid processing mode" }, { status: 400 });
   }
 
   if (Object.keys(updates).length === 0) {

@@ -307,6 +307,7 @@ export default function DeckWorkspaceClient({
   const [updatingScriptModel, setUpdatingScriptModel] = useState(false);
   const [updatingTtsModel, setUpdatingTtsModel] = useState(false);
   const [updatingVoice, setUpdatingVoice] = useState(false);
+  const [updatingMode, setUpdatingMode] = useState(false);
   const serverScriptsRef = useRef<Record<string, string>>(
     Object.fromEntries(initialDeck.slides.map((slide) => [slide.id, slide.script])),
   );
@@ -375,6 +376,8 @@ export default function DeckWorkspaceClient({
     return `/api/decks/${deck.id}/final?v=${deck.videoReady}-${deck.progress.final.ready}`;
   }, [deck.finalVideoPath, deck.id, deck.progress.final.ready, deck.videoReady]);
 
+  const mediaGenerationLocked = deck.mode === 'REVIEW';
+
   const updateScriptModel = async (nextModel: string) => {
     if (!nextModel || nextModel === deck.scriptModel) return;
     setUpdatingScriptModel(true);
@@ -429,6 +432,23 @@ export default function DeckWorkspaceClient({
       voiceId: nextVoiceId,
       voiceLabel: selected?.name ?? prev.voiceLabel,
     }));
+  };
+
+  const updateProcessingMode = async (nextMode: 'REVIEW' | 'ONE_SHOT') => {
+    if (!nextMode || nextMode === deck.mode) return;
+    setUpdatingMode(true);
+    const response = await fetch(`/api/decks/${deck.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: nextMode }),
+    });
+    setUpdatingMode(false);
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      window.alert(payload.error ?? 'Unable to update processing mode.');
+      return;
+    }
+    setDeck((prev) => ({ ...prev, mode: nextMode }));
   };
 
   const describeJob = (jobType: string) =>
@@ -644,6 +664,24 @@ export default function DeckWorkspaceClient({
 
       <SummaryGrid>
         <SummaryCard>
+          <SummaryLabel>Processing mode</SummaryLabel>
+          <Select
+            value={deck.mode}
+            onChange={(event) => updateProcessingMode(event.target.value as 'REVIEW' | 'ONE_SHOT')}
+            disabled={updatingMode}
+          >
+            <option value="REVIEW">Review first</option>
+            <option value="ONE_SHOT">One-shot</option>
+          </Select>
+          <SummaryNote>
+            {updatingMode
+              ? 'Updating…'
+              : deck.mode === 'REVIEW'
+              ? 'Scripts only until approval'
+              : 'Scripts + media allowed'}
+          </SummaryNote>
+        </SummaryCard>
+        <SummaryCard>
           <SummaryLabel>Slides</SummaryLabel>
           <SummaryValue>{deck.slideCount}</SummaryValue>
           <SummaryNote>Total scope</SummaryNote>
@@ -827,19 +865,21 @@ export default function DeckWorkspaceClient({
               <ActionButton
                 $variant="outline"
                 onClick={() => triggerJob('audio', 'selected')}
+                disabled={mediaGenerationLocked}
               >
                 Generate audio for selection
               </ActionButton>
               <ActionButton
                 $variant="outline"
                 onClick={() => triggerJob('video', 'selected')}
+                disabled={mediaGenerationLocked}
               >
                 Render slide video for selection
               </ActionButton>
               <ActionButton
                 $variant="outline"
                 onClick={() => triggerJob('final')}
-                disabled={!deck.finalVideoPath && deck.videoReady < deck.slideCount}
+                disabled={mediaGenerationLocked || (!deck.finalVideoPath && deck.videoReady < deck.slideCount)}
               >
                 Assemble final video
               </ActionButton>
@@ -874,6 +914,11 @@ export default function DeckWorkspaceClient({
                 </ActionButton>
               )}
             </ActionRow>
+            {mediaGenerationLocked && (
+              <p style={{ color: '#FF9BB4', margin: 0 }}>
+                Media generation is disabled while this deck is in review-first mode. Switch to one-shot when scripts are ready.
+              </p>
+            )}
             {(slideAudioUrl || slideVideoUrl) && (
               <MediaPreview>
                 <MediaHeading>Slide media preview</MediaHeading>

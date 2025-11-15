@@ -240,7 +240,9 @@ export function DeckGrid({ decks, disabled, syncing = false, error }: DeckGridPr
         <SyncBadge $state={syncing ? 'syncing' : 'idle'}>{syncing ? 'Syncing progress…' : 'Live data'}</SyncBadge>
         {error && <SyncError>{error}</SyncError>}
       </SyncRow>
-      {sortedDecks.map((deck) => (
+      {sortedDecks.map((deck) => {
+        const mediaLocked = deck.mode === 'REVIEW';
+        return (
         <Card key={deck.id}>
           <Header>
             <Title>
@@ -324,20 +326,20 @@ export function DeckGrid({ decks, disabled, syncing = false, error }: DeckGridPr
             </ActionButton>
             <ActionButton
               onClick={() => triggerJob(deck.id, 'audio')}
-              disabled={disabled}
+              disabled={disabled || mediaLocked}
             >
               Generate audio
             </ActionButton>
             <ActionButton
               onClick={() => triggerJob(deck.id, 'video')}
-              disabled={disabled}
+              disabled={disabled || mediaLocked}
               $accent="outline"
             >
               Render slides
             </ActionButton>
             <ActionButton
               onClick={() => triggerJob(deck.id, 'final')}
-              disabled={disabled || !deck.readyVideo}
+              disabled={disabled || mediaLocked || !deck.readyVideo}
             >
               Build final video
             </ActionButton>
@@ -348,7 +350,8 @@ export function DeckGrid({ decks, disabled, syncing = false, error }: DeckGridPr
             )}
           </Actions>
         </Card>
-      ))}
+      );
+      })}
     </Grid>
   );
 }
