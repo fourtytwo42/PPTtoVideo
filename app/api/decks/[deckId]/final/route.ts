@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import { Readable } from "node:stream";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
@@ -18,14 +17,14 @@ export async function GET(_: Request, { params }: { params: { deckId: string } }
     return NextResponse.json({ error: "Final video not available" }, { status: 404 });
   }
 
+  let file: Buffer;
   try {
-    await fs.promises.access(deck.finalVideoPath, fs.constants.R_OK);
+    file = await fs.promises.readFile(deck.finalVideoPath);
   } catch {
     return NextResponse.json({ error: "Final video missing on disk" }, { status: 404 });
   }
 
-  const stream = Readable.toWeb(fs.createReadStream(deck.finalVideoPath)) as unknown as ReadableStream;
-  return new NextResponse(stream, {
+  return new NextResponse(file as unknown as BodyInit, {
     headers: {
       "Content-Type": "video/mp4",
       "Content-Disposition": `attachment; filename="${deck.title.replace(/[^a-z0-9-_]+/gi, "_")}.mp4"`,

@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import { Readable } from "node:stream";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
@@ -19,14 +18,14 @@ export async function GET(_: Request, { params }: { params: { deckId: string; sl
     return NextResponse.json({ error: "Audio not available" }, { status: 404 });
   }
 
+  let file: Buffer;
   try {
-    await fs.promises.access(slide.audioAsset.filePath, fs.constants.R_OK);
+    file = await fs.promises.readFile(slide.audioAsset.filePath);
   } catch {
     return NextResponse.json({ error: "Audio file missing" }, { status: 404 });
   }
 
-  const stream = Readable.toWeb(fs.createReadStream(slide.audioAsset.filePath)) as unknown as ReadableStream;
-  return new NextResponse(stream, {
+  return new NextResponse(file as unknown as BodyInit, {
     headers: {
       "Content-Type": "audio/mpeg",
       "Content-Disposition": `attachment; filename="${slide.deck.title.replace(/[^a-z0-9-_]+/gi, "_")}-slide-${slide.index}.mp3"`,
