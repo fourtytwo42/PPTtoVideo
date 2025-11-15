@@ -345,11 +345,15 @@ export default function DeckWorkspaceClient({
   const [updatingVoice, setUpdatingVoice] = useState(false);
   const [updatingMode, setUpdatingMode] = useState(false);
   const [generatingSlides, setGeneratingSlides] = useState<string[]>([]);
+  const generatingSlidesRef = useRef<string[]>([]);
   const [clearingJobs, setClearingJobs] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const serverScriptsRef = useRef<Record<string, string>>(
     Object.fromEntries(initialDeck.slides.map((slide) => [slide.id, slide.script])),
   );
+  useEffect(() => {
+    generatingSlidesRef.current = generatingSlides;
+  }, [generatingSlides]);
   const pollDelayRef = useRef(5000);
   const selectedSlide = deck.slides.find((slide) => slide.id === selectedSlideId) ?? deck.slides[0];
 
@@ -645,10 +649,12 @@ export default function DeckWorkspaceClient({
         }
         setScriptDrafts((previous) => {
           const next = { ...previous };
+          const generatingSet = new Set(generatingSlidesRef.current);
           for (const slide of incomingDeck.slides) {
             const lastServer = serverScriptsRef.current[slide.id];
             const previousDraft = previous[slide.id];
-            if (lastServer === undefined || previousDraft === lastServer) {
+            const forceUpdate = generatingSet.has(slide.id);
+            if (forceUpdate || lastServer === undefined || previousDraft === lastServer) {
               next[slide.id] = slide.script;
             }
           }
