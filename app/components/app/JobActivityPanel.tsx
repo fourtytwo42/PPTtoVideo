@@ -96,9 +96,27 @@ const StatusPill = styled.span<{ $variant: 'queued' | 'running' | 'failed' | 'su
       : '#FFD18A'};
 `;
 
+const ClearButton = styled.button`
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  padding: 0.4rem 0.9rem;
+  border-radius: ${({ theme }) => theme.radius.sm};
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
 interface JobActivityPanelProps {
   jobs: DashboardJob[];
   syncing: boolean;
+  onClear?: () => void | Promise<void>;
+  clearing?: boolean;
 }
 
 const statusVariant = (status: string): 'queued' | 'running' | 'failed' | 'succeeded' => {
@@ -114,7 +132,7 @@ const progressForStatus = (job: DashboardJob) => {
   return Math.max(0, Math.min(1, job.progress ?? 0));
 };
 
-export function JobActivityPanel({ jobs, syncing }: JobActivityPanelProps) {
+export function JobActivityPanel({ jobs, syncing, onClear, clearing }: JobActivityPanelProps) {
   return (
     <Panel>
       <Header>
@@ -124,7 +142,14 @@ export function JobActivityPanel({ jobs, syncing }: JobActivityPanelProps) {
             Track queued, running, and recently completed jobs across your decks.
           </p>
         </div>
-        <SyncBadge $state={syncing ? 'syncing' : 'idle'}>{syncing ? 'Syncing…' : 'Live'}</SyncBadge>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <SyncBadge $state={syncing ? 'syncing' : 'idle'}>{syncing ? 'Syncing…' : 'Live'}</SyncBadge>
+          {onClear && (
+            <ClearButton onClick={onClear} disabled={clearing}>
+              {clearing ? 'Clearing…' : 'Clear history'}
+            </ClearButton>
+          )}
+        </div>
       </Header>
       <List>
         {jobs.length === 0 && (

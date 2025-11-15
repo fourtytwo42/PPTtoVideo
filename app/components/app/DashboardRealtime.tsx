@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, type CSSProperties } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { DeckUploadPanel } from '@/app/components/app/DeckUploadPanel';
 import { DeckGrid } from '@/app/components/app/DeckGrid';
 import { DashboardStats } from '@/app/components/app/DashboardStats';
@@ -44,11 +44,12 @@ export function DashboardRealtime({
   initialJobs,
   initialHealth,
 }: DashboardRealtimeProps) {
-  const { decks, jobs, health, syncing, error } = useDashboardProgress({
+  const { decks, jobs, health, syncing, error, refresh } = useDashboardProgress({
     decks: initialDecks,
     jobs: initialJobs,
     health: initialHealth,
   });
+  const [clearingJobs, setClearingJobs] = useState(false);
 
   const stats = useMemo(() => {
     const deckCount = decks.length;
@@ -95,6 +96,28 @@ export function DashboardRealtime({
     [jobs],
   );
 
+  const handleClearJobs = async () => {
+    if (jobs.length === 0) {
+      return;
+    }
+    if (!window.confirm('Clear all job history for this workspace?')) {
+      return;
+    }
+    setClearingJobs(true);
+    const response = await fetch('/api/jobs', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ all: true }),
+    });
+    setClearingJobs(false);
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      window.alert(payload.error ?? 'Unable to clear job history.');
+      return;
+    }
+    await refresh();
+  };
+
   return (
     <>
       <DashboardStats
@@ -108,7 +131,7 @@ export function DashboardRealtime({
       />
       <div style={splitGridStyle}>
         <NotificationCenter notifications={notifications} />
-        <JobActivityPanel jobs={orderedJobs} syncing={syncing} />
+        <JobActivityPanel jobs={orderedJobs} syncing={syncing} onClear={handleClearJobs} clearing={clearingJobs} />
         <DownloadCenter decks={decks} />
       </div>
       <DeckUploadPanel limits={limits} disabled={health.outOfOrder} />

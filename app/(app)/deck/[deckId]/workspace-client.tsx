@@ -334,6 +334,7 @@ export default function DeckWorkspaceClient({
   const [updatingVoice, setUpdatingVoice] = useState(false);
   const [updatingMode, setUpdatingMode] = useState(false);
   const [generatingSlides, setGeneratingSlides] = useState<string[]>([]);
+  const [clearingJobs, setClearingJobs] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const serverScriptsRef = useRef<Record<string, string>>(
     Object.fromEntries(initialDeck.slides.map((slide) => [slide.id, slide.script])),
@@ -479,6 +480,29 @@ export default function DeckWorkspaceClient({
       return;
     }
     setDeck((prev) => ({ ...prev, mode: nextMode }));
+  };
+
+  const clearRecentJobs = async () => {
+    if (!recentJobs.length) {
+      window.alert('There are no jobs to clear for this deck yet.');
+      return;
+    }
+    if (!window.confirm('Clear the job history for this deck?')) {
+      return;
+    }
+    setClearingJobs(true);
+    const response = await fetch('/api/jobs', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deckId: deck.id }),
+    });
+    setClearingJobs(false);
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      window.alert(payload.error ?? 'Unable to clear job history for this deck.');
+      return;
+    }
+    setRecentJobs([]);
   };
 
   const handleDeleteSlides = async (ids: string[]) => {
@@ -877,7 +901,12 @@ export default function DeckWorkspaceClient({
       </MetaRow>
       {recentJobs.length > 0 && (
         <section style={{ display: 'grid', gap: '0.6rem' }}>
-          <h3 style={{ margin: 0, fontSize: '1rem', color: 'rgba(213, 210, 255, 0.78)' }}>Recent jobs</h3>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.6rem' }}>
+            <h3 style={{ margin: 0, fontSize: '1rem', color: 'rgba(213, 210, 255, 0.78)' }}>Recent jobs</h3>
+            <ActionButton $variant="outline" onClick={clearRecentJobs} disabled={clearingJobs}>
+              {clearingJobs ? 'Clearing…' : 'Clear history'}
+            </ActionButton>
+          </div>
           <JobList>
             {recentJobs.map((job) => (
               <JobItem key={job.id}>
