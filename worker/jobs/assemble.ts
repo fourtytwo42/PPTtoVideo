@@ -9,9 +9,9 @@ import {
   markJobRunning,
   markJobSucceeded,
 } from "../../lib/jobs/lifecycle";
-import { finalVideoPath } from "../../lib/storage";
+import { finalVideoPath, ensureDeckStorage } from "../../lib/storage";
 import { runCommand } from "../../lib/cli";
-import { DeckStatus } from "@prisma/client";
+import { AssetStatus, DeckStatus } from "@prisma/client";
 import { probeDuration } from "../../lib/media";
 
 export async function registerAssemblerProcessor(job: Job<BaseJobPayload>) {
@@ -28,21 +28,31 @@ export async function registerAssemblerProcessor(job: Job<BaseJobPayload>) {
     throw new Error("Deck not found");
   }
 
+  ensureDeckStorage(deck.id);
+
   let tmpFile: string | null = null;
   try {
-    const concatFile = deck.slides
-      .filter((slide) => slide.videoAsset?.filePath)
-      .map((slide) => `file '${slide.videoAsset?.filePath}'`)
-      .join("\n");
+    const readyClips = deck.slides.filter(
+      (slide) => slide.videoAsset?.status === AssetStatus.READY && slide.videoAsset?.filePath,
+    );
+
+    if (!readyClips.length) {
+      throw new Error("No rendered slide videos available to assemble");
+    }
+
+    await prisma.deck.update({ where: { id: deck.id }, data: { status: DeckStatus.GENERATING } });
+
+    const concatFile = readyClips.map((slide) => `file '${slide.videoAsset?.filePath}'`).join("\n");
 
     if (!concatFile.trim()) {
-      throw new Error("No rendered slide videos available to assemble");
+      throw new Error("Rendered video list is empty");
     }
 
     tmpFile = path.join(process.cwd(), `.concat-${deck.id}.txt`);
     await fs.promises.writeFile(tmpFile, concatFile, "utf8");
 
     const finalPath = finalVideoPath(deck.id);
+    await fs.promises.rm(finalPath, { force: true }).catch(() => undefined);
     await runCommand(process.env.FFMPEG_PATH ?? "ffmpeg", ["-f", "concat", "-safe", "0", "-i", tmpFile, "-c", "copy", finalPath]);
 
     const duration = await probeDuration(finalPath);

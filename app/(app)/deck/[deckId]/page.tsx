@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/auth';
 import DeckWorkspaceClient from './workspace-client';
 import { redirect } from 'next/navigation';
 import { buildWorkspaceDeck } from '@/lib/decks';
+import { getElevenLabsModelAllowlist, getElevenLabsVoices, getOpenAIModelAllowlist } from '@/lib/settings';
 
 type PageProps = {
   params: { deckId: string };
@@ -56,5 +57,18 @@ export default async function DeckWorkspacePage({ params }: PageProps) {
 
   const serializedDeck = buildWorkspaceDeck(deck);
 
-  return <DeckWorkspaceClient deck={serializedDeck} />;
+  const [scriptModels, ttsModels, voices] = await Promise.all([
+    getOpenAIModelAllowlist(),
+    getElevenLabsModelAllowlist(),
+    getElevenLabsVoices(),
+  ]);
+
+  return (
+    <DeckWorkspaceClient
+      deck={serializedDeck}
+      scriptModels={scriptModels}
+      ttsModels={ttsModels}
+      voices={voices.map((voice) => ({ id: voice.id, name: voice.name }))}
+    />
+  );
 }

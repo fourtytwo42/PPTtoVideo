@@ -12,17 +12,11 @@ import {
 } from "../../lib/jobs/lifecycle";
 import { ScriptStatus, DeckStatus, ProcessingMode, JobType, JobStatus } from "@prisma/client";
 import { clearOutOfOrder, setOutOfOrder } from "../../lib/system";
-import { getDefaultOpenAIModel } from "../../lib/settings";
+import { getDefaultOpenAIModel, getOpenAIApiKey, getOpenAIModelAllowlist, getOpenAISystemPrompt } from "../../lib/settings";
 
 const OPENAI_ENDPOINT = "https://api.openai.com/v1/responses";
 
 export async function registerScriptProcessor(job: Job<BaseJobPayload>) {
-  if (!process.env.OPENAI_API_KEY) {
-    await setOutOfOrder("openai", "OpenAI API key is not configured");
-    await markJobFailed(job.data.jobId, "OPENAI_API_KEY is not configured");
-    throw new Error("OPENAI_API_KEY is not configured");
-  }
-
   const { jobId, deckId, userId } = job.data;
   await markJobRunning(jobId);
 
@@ -50,9 +44,17 @@ export async function registerScriptProcessor(job: Job<BaseJobPayload>) {
     throw new Error("No slides matched the requested selection");
   }
 
-  const model = (await getSetting("openai:model")) ?? (await getDefaultOpenAIModel());
-  const systemPrompt = (await getSetting("openai:systemPrompt")) ??
-    "You are a helpful narration writer that rewrites slide content into a natural script.";
+  const apiKey = await getOpenAIApiKey();
+  if (!apiKey) {
+    await setOutOfOrder("openai", "OpenAI API key is not configured");
+    await markJobFailed(jobId, "OPENAI_API_KEY is not configured");
+    throw new Error("OPENAI_API_KEY is not configured");
+  }
+
+  const systemPrompt = await getOpenAISystemPrompt();
+  const modelAllowlist = await getOpenAIModelAllowlist();
+  const deckModel = deck.scriptModel ?? (await getDefaultOpenAIModel());
+  const model = modelAllowlist.includes(deckModel) ? deckModel : modelAllowlist[0] ?? (await getDefaultOpenAIModel());
 
   try {
     await prisma.deck.update({
@@ -69,13 +71,13 @@ export async function registerScriptProcessor(job: Job<BaseJobPayload>) {
         data: { status: ScriptStatus.REGENERATING },
       });
 
-      const prompt = buildPrompt(deck, slide);
+      const prompt = buildPrompt(deck, slide, systemPrompt);
       let response: Awaited<ReturnType<typeof fetch>>;
       try {
         response = await fetch(OPENAI_ENDPOINT, {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+            Authorization: `Bearer ${apiKey}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
@@ -164,11 +166,18 @@ function truncate(text: string, max = 200) {
   return text.length > max ? `${text.slice(0, max)}…` : text;
 }
 
-async function getSetting(key: string) {
-  const setting = await prisma.systemSetting.findUnique({ where: { key } });
-  return setting?.value as string | undefined;
-}
-
-function buildPrompt(deck: any, slide: any) {
-  return `Deck: ${deck.title}\nSlide ${slide.index}:\nVisible text: ${slide.body ?? ""}\nNotes: ${slide.speakerNotes ?? ""}\nWrite a narration paragraph that preserves the facts but reads naturally.`;
+function buildPrompt(deck: any, slide: any, systemPrompt: string) {
+  const payload = {
+    instructions: systemPrompt,
+    deck: {
+      title: deck.title,
+    },
+    slide: {
+      index: slide.index,
+      title: slide.title ?? null,
+      visibleText: slide.body ?? null,
+      speakerNotes: slide.speakerNotes ?? null,
+    },
+  };
+  return JSON.stringify(payload, null, 2);
 }

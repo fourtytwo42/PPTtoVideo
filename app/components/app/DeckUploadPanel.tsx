@@ -82,6 +82,29 @@ const HiddenInput = styled.input`
   display: none;
 `;
 
+const ConfigGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+`;
+
+const Control = styled.label`
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(213, 210, 255, 0.7);
+`;
+
+const Select = styled.select`
+  padding: 0.55rem 0.75rem;
+  border-radius: ${({ theme }) => theme.radius.sm};
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(12, 10, 28, 0.85);
+  color: ${({ theme }) => theme.colors.text};
+`;
+
 const WarningNotice = styled.div`
   border-radius: ${({ theme }) => theme.radius.md};
   border: 1px solid rgba(255, 196, 88, 0.45);
@@ -100,10 +123,21 @@ const WarningList = styled.ul`
   gap: 0.35rem;
 `;
 
+interface VoiceOption {
+  id: string;
+  name: string;
+}
+
 interface Limits {
   maxSlides: number;
   maxFileSizeMB: number;
   defaultMode: 'REVIEW' | 'ONE_SHOT';
+  scriptModels: string[];
+  defaultScriptModel: string;
+  ttsModels: string[];
+  defaultTTSModel: string;
+  voices: VoiceOption[];
+  defaultVoice: VoiceOption;
 }
 
 interface DeckUploadPanelProps {
@@ -115,6 +149,19 @@ export function DeckUploadPanel({ limits, disabled }: DeckUploadPanelProps) {
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [processingMode, setProcessingMode] = useState<Limits['defaultMode']>(limits.defaultMode);
+  const [scriptModel, setScriptModel] = useState(() => {
+    const options = limits.scriptModels.length ? limits.scriptModels : [limits.defaultScriptModel];
+    return options.includes(limits.defaultScriptModel) ? limits.defaultScriptModel : options[0];
+  });
+  const [ttsModel, setTtsModel] = useState(() => {
+    const options = limits.ttsModels.length ? limits.ttsModels : [limits.defaultTTSModel];
+    return options.includes(limits.defaultTTSModel) ? limits.defaultTTSModel : options[0];
+  });
+  const [voiceId, setVoiceId] = useState(() => limits.defaultVoice.id ?? limits.voices[0]?.id ?? '');
+  const scriptModelOptions = limits.scriptModels.length ? limits.scriptModels : [scriptModel];
+  const ttsModelOptions = limits.ttsModels.length ? limits.ttsModels : [ttsModel];
+  const voiceOptions = limits.voices.length ? limits.voices : limits.defaultVoice.id ? [limits.defaultVoice] : [];
   const inputRef = useRef<HTMLInputElement | null>(null);
   const router = useRouter();
 
@@ -127,7 +174,12 @@ export function DeckUploadPanel({ limits, disabled }: DeckUploadPanelProps) {
       for (const file of Array.from(fileList)) {
         const form = new FormData();
         form.append('file', file);
-        form.append('mode', limits.defaultMode);
+        form.append('mode', processingMode);
+        form.append('model', scriptModel);
+        form.append('ttsModel', ttsModel);
+        if (voiceId) {
+          form.append('voiceId', voiceId);
+        }
         if (limits.maxFileSizeMB && limits.maxFileSizeMB > 0) {
           const sizeMb = file.size / (1024 * 1024);
           if (sizeMb > limits.maxFileSizeMB) {
@@ -171,6 +223,58 @@ export function DeckUploadPanel({ limits, disabled }: DeckUploadPanelProps) {
           Drop PPTX, PDF, or Google Slides exports. We will parse slides, generate scripts, and queue narration jobs instantly.
         </p>
       </div>
+      <ConfigGrid>
+        <Control>
+          Processing mode
+          <Select
+            value={processingMode}
+            onChange={(event) => setProcessingMode(event.target.value as Limits['defaultMode'])}
+            disabled={disabled || uploading}
+          >
+            <option value="REVIEW">Review first</option>
+            <option value="ONE_SHOT">One-shot automation</option>
+          </Select>
+        </Control>
+        <Control>
+          Script model
+          <Select
+            value={scriptModel}
+            onChange={(event) => setScriptModel(event.target.value)}
+            disabled={disabled || uploading}
+          >
+            {scriptModelOptions.map((model) => (
+              <option key={model} value={model}>
+                {model}
+              </option>
+            ))}
+          </Select>
+        </Control>
+        <Control>
+          TTS model
+          <Select value={ttsModel} onChange={(event) => setTtsModel(event.target.value)} disabled={disabled || uploading}>
+            {ttsModelOptions.map((model) => (
+              <option key={model} value={model}>
+                {model}
+              </option>
+            ))}
+          </Select>
+        </Control>
+        <Control>
+          Voice
+          <Select
+            value={voiceId}
+            onChange={(event) => setVoiceId(event.target.value)}
+            disabled={disabled || uploading || voiceOptions.length === 0}
+          >
+            {voiceOptions.length === 0 && <option value="">No voices available</option>}
+            {voiceOptions.map((voice) => (
+              <option key={voice.id} value={voice.id}>
+                {voice.name}
+              </option>
+            ))}
+          </Select>
+        </Control>
+      </ConfigGrid>
       <DropZone
         $dragging={dragging}
         onDragEnter={(event) => {
@@ -231,7 +335,10 @@ export function DeckUploadPanel({ limits, disabled }: DeckUploadPanelProps) {
         <span>
           Soft limits: <strong>{limits.maxSlides} slides</strong> • <strong>{limits.maxFileSizeMB} MB</strong> per file
         </span>
-        <span>Default mode: {limits.defaultMode === 'REVIEW' ? 'Review first' : 'One-shot automation'}</span>
+        <span>Mode: {processingMode === 'REVIEW' ? 'Review first' : 'One-shot automation'}</span>
+        <span>Script model: {scriptModel}</span>
+        <span>TTS model: {ttsModel}</span>
+        <span>Voice: {voiceOptions.find((voice) => voice.id === voiceId)?.name ?? 'Not set'}</span>
       </Details>
     </Panel>
   );

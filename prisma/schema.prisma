@@ -36,6 +36,11 @@ model Deck {
   ownerId        String
   sourcePath     String
   sourceType     SourceType
+  scriptModel    String?
+  ttsModel       String?
+  voiceId        String?
+  voiceLabel     String?
+  voiceSettings  Json?
   slideCount     Int         @default(0)
   status         DeckStatus  @default(INGESTING)
   mode           ProcessingMode @default(REVIEW)

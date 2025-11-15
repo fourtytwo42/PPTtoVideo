@@ -177,6 +177,14 @@ const SelectionBadge = styled.span`
   letter-spacing: 0.04em;
 `;
 
+const Select = styled.select`
+  padding: 0.5rem 0.75rem;
+  border-radius: ${({ theme }) => theme.radius.sm};
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(12, 10, 28, 0.85);
+  color: ${({ theme }) => theme.colors.text};
+`;
+
 const JobList = styled.ul`
   margin: 0;
   padding: 0;
@@ -214,11 +222,24 @@ const ActionButton = styled.button<{ $variant?: 'primary' | 'outline' }>`
   pointer-events: ${({ disabled }) => (disabled ? 'none' : 'auto')};
 `;
 
-interface DeckWorkspaceProps {
-  deck: WorkspaceDeck;
+interface VoiceOption {
+  id: string;
+  name: string;
 }
 
-export default function DeckWorkspaceClient({ deck: initialDeck }: DeckWorkspaceProps) {
+interface DeckWorkspaceProps {
+  deck: WorkspaceDeck;
+  scriptModels: string[];
+  ttsModels: string[];
+  voices: VoiceOption[];
+}
+
+export default function DeckWorkspaceClient({
+  deck: initialDeck,
+  scriptModels,
+  ttsModels,
+  voices,
+}: DeckWorkspaceProps) {
   const [deck, setDeck] = useState<WorkspaceDeck>(initialDeck);
   const [selectedSlideId, setSelectedSlideId] = useState(initialDeck.slides[0]?.id ?? '');
   const [selectedSlideIds, setSelectedSlideIds] = useState<string[]>(() =>
@@ -234,6 +255,9 @@ export default function DeckWorkspaceClient({ deck: initialDeck }: DeckWorkspace
   const [recentJobs, setRecentJobs] = useState<
     { id: string; type: string; status: string; progress: number; createdAt: string; updatedAt: string }[]
   >([]);
+  const [updatingScriptModel, setUpdatingScriptModel] = useState(false);
+  const [updatingTtsModel, setUpdatingTtsModel] = useState(false);
+  const [updatingVoice, setUpdatingVoice] = useState(false);
   const serverScriptsRef = useRef<Record<string, string>>(
     Object.fromEntries(initialDeck.slides.map((slide) => [slide.id, slide.script])),
   );
@@ -257,6 +281,81 @@ export default function DeckWorkspaceClient({ deck: initialDeck }: DeckWorkspace
     : deck.scriptsReady === deck.slideCount && deck.slideCount > 0
     ? 'Scripts approved — queue narration when ready'
     : 'Ingestion or script generation in progress';
+  const scriptModelOptions = scriptModels.length
+    ? scriptModels
+    : deck.scriptModel
+    ? [deck.scriptModel]
+    : ['gpt-4o-mini'];
+  const currentScriptModel = deck.scriptModel ?? scriptModelOptions[0];
+  const ttsModelOptions = ttsModels.length
+    ? ttsModels
+    : deck.ttsModel
+    ? [deck.ttsModel]
+    : ['eleven_flash_v2_5'];
+  const currentTtsModel = deck.ttsModel ?? ttsModelOptions[0];
+  const voiceOptions = voices.length
+    ? voices
+    : deck.voiceId
+    ? [{ id: deck.voiceId, name: deck.voiceLabel ?? deck.voiceId }]
+    : [];
+  const currentVoiceId = deck.voiceId ?? voiceOptions[0]?.id ?? '';
+
+  const updateScriptModel = async (nextModel: string) => {
+    if (!nextModel || nextModel === deck.scriptModel) return;
+    setUpdatingScriptModel(true);
+    const response = await fetch(`/api/decks/${deck.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scriptModel: nextModel }),
+    });
+    setUpdatingScriptModel(false);
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      window.alert(payload.error ?? 'Unable to update script model.');
+      return;
+    }
+    setDeck((prev) => ({ ...prev, scriptModel: nextModel }));
+  };
+
+  const updateTtsModelSelection = async (nextModel: string) => {
+    if (!nextModel || nextModel === deck.ttsModel) return;
+    setUpdatingTtsModel(true);
+    const response = await fetch(`/api/decks/${deck.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ttsModel: nextModel }),
+    });
+    setUpdatingTtsModel(false);
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      window.alert(payload.error ?? 'Unable to update TTS model.');
+      return;
+    }
+    setDeck((prev) => ({ ...prev, ttsModel: nextModel }));
+  };
+
+  const updateVoiceSelection = async (nextVoiceId: string) => {
+    if (!nextVoiceId || nextVoiceId === deck.voiceId) return;
+    setUpdatingVoice(true);
+    const response = await fetch(`/api/decks/${deck.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ voiceId: nextVoiceId }),
+    });
+    setUpdatingVoice(false);
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      window.alert(payload.error ?? 'Unable to update voice.');
+      return;
+    }
+    const selected = voiceOptions.find((voice) => voice.id === nextVoiceId);
+    setDeck((prev) => ({
+      ...prev,
+      voiceId: nextVoiceId,
+      voiceLabel: selected?.name ?? prev.voiceLabel,
+    }));
+  };
+
   const describeJob = (jobType: string) =>
     jobType
       .split('_')
@@ -494,6 +593,52 @@ export default function DeckWorkspaceClient({ deck: initialDeck }: DeckWorkspace
             {deck.videoReady}/{deck.slideCount}
           </SummaryValue>
           <SummaryNote>{Math.round(deck.progress.video.progress * 100)}% rendered</SummaryNote>
+        </SummaryCard>
+        <SummaryCard>
+          <SummaryLabel>Script model</SummaryLabel>
+          <Select
+            value={currentScriptModel}
+            onChange={(event) => updateScriptModel(event.target.value)}
+            disabled={updatingScriptModel}
+          >
+            {scriptModelOptions.map((model) => (
+              <option value={model} key={model}>
+                {model}
+              </option>
+            ))}
+          </Select>
+          <SummaryNote>{updatingScriptModel ? 'Updating…' : 'Affects future generations'}</SummaryNote>
+        </SummaryCard>
+        <SummaryCard>
+          <SummaryLabel>TTS model</SummaryLabel>
+          <Select
+            value={currentTtsModel}
+            onChange={(event) => updateTtsModelSelection(event.target.value)}
+            disabled={updatingTtsModel}
+          >
+            {ttsModelOptions.map((model) => (
+              <option value={model} key={model}>
+                {model}
+              </option>
+            ))}
+          </Select>
+          <SummaryNote>{updatingTtsModel ? 'Updating…' : 'Used for narration jobs'}</SummaryNote>
+        </SummaryCard>
+        <SummaryCard>
+          <SummaryLabel>Voice</SummaryLabel>
+          <Select
+            value={currentVoiceId}
+            onChange={(event) => updateVoiceSelection(event.target.value)}
+            disabled={updatingVoice || voiceOptions.length === 0}
+          >
+            {voiceOptions.length === 0 && <option value="">No voices synced</option>}
+            {voiceOptions.map((voice) => (
+              <option value={voice.id} key={voice.id}>
+                {voice.name}
+              </option>
+            ))}
+          </Select>
+          <SummaryNote>{updatingVoice ? 'Updating…' : 'Impacts future audio renders'}</SummaryNote>
         </SummaryCard>
       </SummaryGrid>
       <MetaRow>

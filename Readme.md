@@ -48,6 +48,37 @@ Once services are running visit `http://localhost:3000` for the marketing tour, 
 - `/api/decks/:deckId/final` (stream) and `/api/decks/:deckId/slides/:slideId/{audio|video}` (download) to retrieve rendered assets
 - `/admin` for model defaults, limit configuration, and audit history (admins only)
 
+## Production operations
+
+### PM2 process manager
+
+`ecosystem.config.js` defines two processes:
+
+| Name | Command | Purpose |
+| --- | --- | --- |
+| `deckforge-web` | `npm run start` | Serves the built Next.js app |
+| `deckforge-worker` | `npm run worker:prod` | Runs BullMQ ingestion/audio/video workers |
+
+Deploy flow:
+
+```bash
+npm install
+npm run build
+pm2 start ecosystem.config.js
+pm2 save
+```
+
+PM2 automatically restarts both processes if they crash and preserves logs (`pm2 logs deckforge-web` / `pm2 logs deckforge-worker`).
+
+### Health diagnostics
+
+Admins can audit runtime dependencies in two places:
+
+1. **Admin console → Platform health**: UI panel powered by `/api/admin/health` (requires admin session).
+2. **CLI**: `npm run health:cli` hits the same endpoint and prints traffic-light results—handy for automated smoke tests.
+
+The health checks cover PostgreSQL, Redis/BullMQ, storage permissions, ffmpeg/ffprobe, LibreOffice, pdftoppm, and the OpenAI / ElevenLabs API keys. Use these before and after deployments to confirm all prerequisites are satisfied.
+
 ## Project structure
 
 ```

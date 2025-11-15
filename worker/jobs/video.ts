@@ -1,8 +1,10 @@
 import { Job } from "bullmq";
+import fs from "node:fs";
+import { constants as FsConstants } from "node:fs";
 import { prisma } from "../../lib/prisma";
 import type { BaseJobPayload } from "../../lib/jobs/queue";
 import { enqueueJob } from "../../lib/jobs/queue";
-import { slideVideoPath, slideImagePath, slideAudioPath } from "../../lib/storage";
+import { slideVideoPath, slideImagePath, slideAudioPath, ensureDeckStorage } from "../../lib/storage";
 import {
   createNotification,
   markJobFailed,
@@ -25,7 +27,7 @@ export async function registerVideoProcessor(job: Job<BaseJobPayload>) {
 
   const deck = await prisma.deck.findUnique({
     where: { id: deckId },
-    include: { slides: true },
+    include: { slides: { include: { audioAsset: true } } },
   });
 
   if (!deck) {
@@ -43,7 +45,16 @@ export async function registerVideoProcessor(job: Job<BaseJobPayload>) {
   }
 
   try {
+    ensureDeckStorage(deck.id);
     await prisma.deck.update({ where: { id: deck.id }, data: { status: DeckStatus.GENERATING } });
+
+    const invalidSlides = slidesToProcess.filter((slide) => slide.audioAsset?.status !== AssetStatus.READY);
+    if (invalidSlides.length) {
+      const labels = invalidSlides.map((slide) => `#${slide.index}`).join(", ");
+      const reason = `Audio must be READY before rendering video. Pending slides: ${labels}`;
+      await markJobFailed(jobId, reason);
+      throw new Error(reason);
+    }
 
     const totalSlides = Math.max(slidesToProcess.length, 1);
     let processed = 0;
@@ -52,11 +63,23 @@ export async function registerVideoProcessor(job: Job<BaseJobPayload>) {
       const audio = slideAudioPath(deck.id, slide.index);
       const video = slideVideoPath(deck.id, slide.index);
 
+      const [imageExists, audioExists] = await Promise.all([fileExists(image), fileExists(audio)]);
+      if (!imageExists || !audioExists) {
+        const missing = [!imageExists ? "image" : null, !audioExists ? "audio" : null]
+          .filter(Boolean)
+          .join(" & ");
+        const reason = `Missing ${missing} asset(s) for slide ${slide.index}.`;
+        await markJobFailed(jobId, reason);
+        throw new Error(reason);
+      }
+
       await prisma.videoAsset.upsert({
         where: { slideId: slide.id },
         update: { filePath: video, status: AssetStatus.PROCESSING },
         create: { slideId: slide.id, deckId: deck.id, filePath: video, status: AssetStatus.PROCESSING },
       });
+
+      await fs.promises.rm(video, { force: true }).catch(() => undefined);
 
       const args = [
         "-loop",
@@ -122,4 +145,13 @@ export async function registerVideoProcessor(job: Job<BaseJobPayload>) {
 function formatError(error: unknown) {
   if (error instanceof Error) return error.message;
   return typeof error === "string" ? error : "Unknown error";
+}
+
+async function fileExists(filePath: string) {
+  try {
+    await fs.promises.access(filePath, FsConstants.F_OK);
+    return true;
+  } catch {
+    return false;
+  }
 }

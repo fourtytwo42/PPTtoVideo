@@ -6,10 +6,17 @@ const ADMIN_KEYS = [
   "defaultOpenAIModel",
   "defaultTTSModel",
   "defaultVoice",
+  "defaultVoiceId",
+  "defaultVoiceLabel",
   "maxFileSizeMB",
   "maxSlides",
   "concurrencyLimitPerUser",
   "defaultMode",
+  "openaiApiKey",
+  "openaiModelAllowlist",
+  "openaiSystemPrompt",
+  "elevenlabsApiKey",
+  "elevenlabsModelAllowlist",
 ];
 
 export async function GET() {

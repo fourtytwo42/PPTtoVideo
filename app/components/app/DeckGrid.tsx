@@ -10,6 +10,26 @@ const Grid = styled.div`
   gap: 1.6rem;
 `;
 
+const SyncRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+`;
+
+const SyncBadge = styled.span<{ $state: 'syncing' | 'idle' }>`
+  font-size: 0.77rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: ${({ $state }) => ($state === 'syncing' ? '#CBB3FF' : 'rgba(213, 210, 255, 0.7)')};
+`;
+
+const SyncError = styled.span`
+  font-size: 0.77rem;
+  letter-spacing: 0.05em;
+  color: #ff9bb4;
+`;
+
 const Card = styled.article`
   background: ${({ theme }) => theme.colors.surfaceStrong};
   border-radius: ${({ theme }) => theme.radius.lg};
@@ -180,9 +200,11 @@ const OpenLink = styled(Link)`
 interface DeckGridProps {
   decks: DeckSummary[];
   disabled: boolean;
+  syncing?: boolean;
+  error?: string | null;
 }
 
-export function DeckGrid({ decks, disabled }: DeckGridProps) {
+export function DeckGrid({ decks, disabled, syncing = false, error }: DeckGridProps) {
   const sortedDecks = [...decks].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const statusVariant = (status: DeckSummary['status']): 'ready' | 'running' | 'complete' | 'failed' => {
@@ -214,6 +236,10 @@ export function DeckGrid({ decks, disabled }: DeckGridProps) {
 
   return (
     <Grid>
+      <SyncRow>
+        <SyncBadge $state={syncing ? 'syncing' : 'idle'}>{syncing ? 'Syncing progress…' : 'Live data'}</SyncBadge>
+        {error && <SyncError>{error}</SyncError>}
+      </SyncRow>
       {sortedDecks.map((deck) => (
         <Card key={deck.id}>
           <Header>
@@ -277,6 +303,9 @@ export function DeckGrid({ decks, disabled }: DeckGridProps) {
           )}
           <MetaRow>
             <span>Mode: {deck.mode === 'REVIEW' ? 'Review workflow' : 'One-shot automation'}</span>
+            <span>Script model: {deck.scriptModel ?? 'Default'}</span>
+            <span>TTS model: {deck.ttsModel ?? 'Default'}</span>
+            <span>Voice: {deck.voiceLabel ?? 'Default voice'}</span>
             <span>
               Runtime {formatDuration(deck.runtimeSeconds)}
               {deck.finalVideoPath ? '' : ` • Est. ${formatDuration(deck.estimatedSeconds)}`}

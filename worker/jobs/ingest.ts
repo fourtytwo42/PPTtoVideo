@@ -6,7 +6,7 @@ import JSZip from "jszip";
 import { XMLParser } from "fast-xml-parser";
 import pdf from "pdf-parse";
 import { prisma } from "../../lib/prisma";
-import { slideImagePath } from "../../lib/storage";
+import { slideImagePath, ensureDeckStorage, clearDeckSegment } from "../../lib/storage";
 import { runCommand } from "../../lib/cli";
 import type { BaseJobPayload } from "../../lib/jobs/queue";
 import { enqueueJob } from "../../lib/jobs/queue";
@@ -37,6 +37,14 @@ export async function registerIngestionProcessor(job: Job<BaseJobPayload>) {
   }
 
   try {
+    ensureDeckStorage(deck.id);
+    await Promise.all([
+      clearDeckSegment(deck.id, "slides"),
+      clearDeckSegment(deck.id, "audio"),
+      clearDeckSegment(deck.id, "video"),
+      clearDeckSegment(deck.id, "final"),
+    ]);
+
     const sourceFile = deck.sourcePath;
     const buffer = await fs.promises.readFile(sourceFile);
 

@@ -5,6 +5,10 @@ export type DeckSummary = {
   title: string;
   sourceType: string;
   createdAt: string;
+  scriptModel: string | null;
+  ttsModel: string | null;
+  voiceId: string | null;
+  voiceLabel: string | null;
   slideCount: number;
   mode: ProcessingMode;
   status: DeckStatus;
@@ -36,6 +40,10 @@ export type WorkspaceDeck = {
   title: string;
   sourceType: string;
   createdAt: string;
+  scriptModel: string | null;
+  ttsModel: string | null;
+  voiceId: string | null;
+  voiceLabel: string | null;
   status: DeckStatus;
   mode: ProcessingMode;
   slideCount: number;
@@ -127,6 +135,10 @@ export function buildDeckSummary(deck: DeckSummarySource): DeckSummary {
     title: deck.title,
     sourceType: deck.sourceType,
     createdAt: deck.createdAt.toISOString(),
+    scriptModel: deck.scriptModel ?? null,
+    ttsModel: deck.ttsModel ?? null,
+    voiceId: deck.voiceId ?? null,
+    voiceLabel: deck.voiceLabel ?? null,
     slideCount: totalSlides,
     mode: deck.mode,
     status: deck.status,
@@ -166,6 +178,10 @@ export function buildWorkspaceDeck(deck: WorkspaceDeckSource): WorkspaceDeck {
     title: deck.title,
     sourceType: deck.sourceType,
     createdAt: deck.createdAt.toISOString(),
+    scriptModel: deck.scriptModel ?? null,
+    ttsModel: deck.ttsModel ?? null,
+    voiceId: deck.voiceId ?? null,
+    voiceLabel: deck.voiceLabel ?? null,
     status: deck.status,
     mode: deck.mode,
     slideCount: totalSlides,

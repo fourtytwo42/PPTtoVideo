@@ -12,13 +12,20 @@ import {
   markJobSucceeded,
 } from "../../lib/jobs/lifecycle";
 import { AssetStatus, DeckStatus, ProcessingMode, JobType, JobStatus } from "@prisma/client";
-import { slideAudioPath } from "../../lib/storage";
+import { slideAudioPath, ensureDeckStorage } from "../../lib/storage";
 import { probeDuration } from "../../lib/media";
 import { clearOutOfOrder, setOutOfOrder } from "../../lib/system";
-import { getDefaultTTSModel, getDefaultVoice } from "../../lib/settings";
+import {
+  findVoiceById,
+  getDefaultTTSModel,
+  getDefaultVoiceSelection,
+  getElevenLabsApiKey,
+  getElevenLabsModelAllowlist,
+} from "../../lib/settings";
 
 export async function registerAudioProcessor(job: Job<BaseJobPayload>) {
-  if (!process.env.ELEVENLABS_API_KEY) {
+  const apiKey = await getElevenLabsApiKey();
+  if (!apiKey) {
     await setOutOfOrder("elevenlabs", "ElevenLabs API key is not configured");
     await markJobFailed(job.data.jobId, "ELEVENLABS_API_KEY is not configured");
     throw new Error("ELEVENLABS_API_KEY is not configured");
@@ -51,10 +58,22 @@ export async function registerAudioProcessor(job: Job<BaseJobPayload>) {
     throw new Error("No slides matched the requested selection");
   }
 
-  const voiceId = (await getSetting("tts:voiceId")) ?? (await getDefaultVoice());
-  const modelId = (await getSetting("tts:modelId")) ?? (await getDefaultTTSModel());
+  const voiceFallback = await getDefaultVoiceSelection();
+  const allowedTtsModels = await getElevenLabsModelAllowlist();
+  const fallbackModel = await getDefaultTTSModel();
+  const deckVoice = deck.voiceId ? await findVoiceById(deck.voiceId) : null;
+  const effectiveVoice = deckVoice ?? voiceFallback;
+  const voiceId = effectiveVoice.id;
+  const voiceSettings =
+    (deck.voiceSettings as Record<string, unknown> | null) ?? effectiveVoice.settings ?? {
+      stability: 0.4,
+      similarity_boost: 0.7,
+    };
+  const modelId = deck.ttsModel && allowedTtsModels.includes(deck.ttsModel) ? deck.ttsModel : fallbackModel;
 
   try {
+    ensureDeckStorage(deck.id);
+
     await prisma.deck.update({ where: { id: deck.id }, data: { status: DeckStatus.GENERATING } });
 
     const totalSlides = Math.max(slidesToProcess.filter((slide) => Boolean(slide.script)).length, 1);
@@ -66,7 +85,15 @@ export async function registerAudioProcessor(job: Job<BaseJobPayload>) {
 
       const payload = {
         text: slide.script.content,
-        voice_settings: { stability: 0.4, similarity_boost: 0.7 },
+        model_id: modelId,
+        voice_settings: {
+          stability: typeof voiceSettings?.stability === "number" ? voiceSettings.stability : 0.4,
+          similarity_boost:
+            typeof voiceSettings?.similarity_boost === "number" ? voiceSettings.similarity_boost : 0.7,
+          style: typeof voiceSettings?.style === "number" ? voiceSettings.style : undefined,
+          speaker_boost:
+            typeof voiceSettings?.speaker_boost === "boolean" ? voiceSettings.speaker_boost : true,
+        },
       };
 
       let response: Awaited<ReturnType<typeof fetch>>;
@@ -74,11 +101,9 @@ export async function registerAudioProcessor(job: Job<BaseJobPayload>) {
         response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
           method: "POST",
           headers: {
-            "xi-api-key": process.env.ELEVENLABS_API_KEY ?? "",
+            "xi-api-key": apiKey,
             "Content-Type": "application/json",
             Accept: "audio/mpeg",
-            "X-Voice-Id": voiceId,
-            "X-Model-Id": modelId,
           },
           body: JSON.stringify(payload),
         });
@@ -154,11 +179,6 @@ async function upsertAudioAsset(
     update: { filePath, status, ...(duration !== undefined ? { duration } : {}) },
     create: { slideId, deckId, filePath, status, ...(duration !== undefined ? { duration } : {}) },
   });
-}
-
-async function getSetting(key: string) {
-  const setting = await prisma.systemSetting.findUnique({ where: { key } });
-  return setting?.value as string | undefined;
 }
 
 function formatError(error: unknown) {

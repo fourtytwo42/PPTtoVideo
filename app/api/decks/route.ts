@@ -1,12 +1,21 @@
 import fs from "node:fs";
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "../../../lib/prisma";
+import { prisma, Prisma } from "../../../lib/prisma";
 import { getCurrentUser } from "../../../lib/auth";
-import { deckSourcePath, ensureStorageDirs } from "../../../lib/storage";
+import { deckSourcePath, ensureDeckStorage, ensureStorageDirs } from "../../../lib/storage";
 import { enqueueJob } from "../../../lib/jobs/queue";
 import { SourceType, DeckStatus, ProcessingMode, JobType } from "@prisma/client";
 import { assertWithinConcurrencyLimit } from "../../../lib/jobs/concurrency";
-import { getDefaultProcessingMode, getSoftLimits } from "../../../lib/settings";
+import {
+  getDefaultProcessingMode,
+  getDefaultOpenAIModel,
+  getDefaultTTSModel,
+  getDefaultVoiceSelection,
+  getElevenLabsModelAllowlist,
+  getElevenLabsVoices,
+  getOpenAIModelAllowlist,
+  getSoftLimits,
+} from "../../../lib/settings";
 import { createNotification } from "../../../lib/jobs/lifecycle";
 import { buildDeckSummary } from "../../../lib/decks";
 
@@ -43,6 +52,7 @@ export async function POST(request: NextRequest) {
   const formData = await request.formData();
   const file = formData.get("file");
   const requestedMode = (formData.get("mode") as string) ?? undefined;
+  const requestedModel = (formData.get("model") as string) ?? undefined;
   const title = (formData.get("title") as string) ?? undefined;
 
   if (!(file instanceof File)) {
@@ -54,6 +64,8 @@ export async function POST(request: NextRequest) {
   const sourceType = ext === "pdf" ? SourceType.PDF : SourceType.PPTX;
   const { maxFileSizeMB } = await getSoftLimits();
   const defaultMode = await getDefaultProcessingMode();
+  const defaultScriptModel = await getDefaultOpenAIModel();
+  const defaultTTSModel = await getDefaultTTSModel();
 
   const chosenMode = (() => {
     if (requestedMode && requestedMode in ProcessingMode) {
@@ -63,6 +75,18 @@ export async function POST(request: NextRequest) {
   })();
 
   const warnings: string[] = [];
+  const allowedModels = await getOpenAIModelAllowlist();
+  const scriptModel =
+    requestedModel && allowedModels.includes(requestedModel) ? requestedModel : defaultScriptModel;
+  const allowedTtsModels = await getElevenLabsModelAllowlist();
+  const requestedTtsModel = (formData.get("ttsModel") as string) ?? undefined;
+  const ttsModel =
+    requestedTtsModel && allowedTtsModels.includes(requestedTtsModel) ? requestedTtsModel : defaultTTSModel;
+  const requestedVoiceId = (formData.get("voiceId") as string) ?? undefined;
+  const voices = await getElevenLabsVoices();
+  const defaultVoice = await getDefaultVoiceSelection();
+  const selectedVoice =
+    (requestedVoiceId ? voices.find((voice) => voice.id === requestedVoiceId) : undefined) ?? defaultVoice;
 
   if (maxFileSizeMB && maxFileSizeMB > 0) {
     const sizeMB = buffer.length / (1024 * 1024);
@@ -90,11 +114,18 @@ export async function POST(request: NextRequest) {
       ownerId: user.id,
       sourcePath: "", // placeholder update after write
       sourceType,
+      scriptModel,
+      ttsModel,
+      voiceId: selectedVoice?.id ?? null,
+      voiceLabel: selectedVoice?.name ?? null,
+      voiceSettings: (selectedVoice?.settings as Prisma.JsonValue) ?? undefined,
       mode: chosenMode,
       status: DeckStatus.INGESTING,
       warnings,
     },
   });
+
+  ensureDeckStorage(deck.id);
 
   const sourcePath = deckSourcePath(deck.id, file.name);
   await fs.promises.writeFile(sourcePath, buffer);
