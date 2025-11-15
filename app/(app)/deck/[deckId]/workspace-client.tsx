@@ -262,15 +262,26 @@ const SlideVisual = styled.div`
   background: rgba(5, 3, 14, 0.55);
   border-radius: ${({ theme }) => theme.radius.md};
   border: 1px solid rgba(255, 255, 255, 0.05);
-  padding: 0.5rem;
+  padding: 0.75rem;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  overflow: hidden;
 `;
 
 const SlideImage = styled.img`
   width: 100%;
+  height: auto;
   display: block;
   border-radius: ${({ theme }) => theme.radius.sm};
   background: rgba(9, 7, 18, 0.8);
   object-fit: contain;
+  max-height: 65vh;
+  margin: 0 auto;
+
+  @media (max-width: 768px) {
+    max-height: 50vh;
+  }
 `;
 
 const MediaPreview = styled.div`
