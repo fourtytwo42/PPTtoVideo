@@ -5,6 +5,10 @@ import type { Adapter } from "next-auth/adapters";
 import { prisma } from "./prisma";
 import { compare } from "bcryptjs";
 
+type CallbackHandlers = NonNullable<NextAuthOptions["callbacks"]>;
+type JWTCallbackParams = Parameters<NonNullable<CallbackHandlers["jwt"]>>[0];
+type SessionCallbackParams = Parameters<NonNullable<CallbackHandlers["session"]>>[0];
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as Adapter,
   providers: [
@@ -39,14 +43,14 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }: JWTCallbackParams) {
       if (user) {
         token.role = user.role;
         token.sub = user.id;
       }
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: SessionCallbackParams) {
       if (session.user && token.sub) {
         session.user.id = token.sub;
         if (token.role) {

@@ -12,6 +12,9 @@ declare module "next-auth" {
   interface User {
     role: Role;
   }
+
+  type NextAuthOptions = import("next-auth/core/types").AuthOptions;
+  type AuthOptions = import("next-auth/core/types").AuthOptions;
 }
 
 declare module "next-auth/jwt" {

@@ -69,7 +69,7 @@ export async function registerAudioProcessor(job: Job<BaseJobPayload>) {
         voice_settings: { stability: 0.4, similarity_boost: 0.7 },
       };
 
-      let response: Response;
+      let response: Awaited<ReturnType<typeof fetch>>;
       try {
         response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
           method: "POST",

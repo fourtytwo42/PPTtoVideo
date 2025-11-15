@@ -1,9 +1,7 @@
 import type { Metadata } from 'next';
-import StyledComponentsRegistry from '@/lib/styled/registry';
-import { GlobalStyle, theme } from '@/theme';
-import { ThemeProvider } from 'styled-components';
 import { ReactNode } from 'react';
 import { Plus_Jakarta_Sans, DM_Serif_Display } from 'next/font/google';
+import AppProviders from '@/app/providers';
 
 const sans = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-sans' });
 const serif = DM_Serif_Display({ subsets: ['latin'], weight: '400', variable: '--font-serif' });
@@ -18,12 +16,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${sans.variable} ${serif.variable}`}>
       <body>
-        <StyledComponentsRegistry>
-          <ThemeProvider theme={theme}>
-            <GlobalStyle />
-            {children}
-          </ThemeProvider>
-        </StyledComponentsRegistry>
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );

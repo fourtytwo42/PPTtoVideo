@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "../../../../lib/prisma";
-import { getCurrentUser } from "../../../../lib/auth";
+import { prisma, Prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth";
 
 const ADMIN_KEYS = [
   "defaultOpenAIModel",
@@ -34,15 +34,15 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const data = await request.json();
-  const changes: Record<string, unknown> = {};
+  const changes: Prisma.JsonObject = {};
   for (const key of ADMIN_KEYS) {
     if (key in data) {
       await prisma.systemSetting.upsert({
         where: { key: `admin:${key}` },
-        update: { value: data[key] },
-        create: { key: `admin:${key}`, value: data[key] },
+        update: { value: data[key] as Prisma.InputJsonValue },
+        create: { key: `admin:${key}`, value: data[key] as Prisma.InputJsonValue },
       });
-      changes[key] = data[key];
+      changes[key] = data[key] as Prisma.JsonValue;
     }
   }
   if (Object.keys(changes).length > 0) {

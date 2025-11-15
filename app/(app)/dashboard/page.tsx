@@ -1,37 +1,37 @@
+import type { CSSProperties } from 'react';
 import { DeckUploadPanel } from '@/app/components/app/DeckUploadPanel';
 import { DashboardStats } from '@/app/components/app/DashboardStats';
 import { DeckGrid } from '@/app/components/app/DeckGrid';
 import { NotificationCenter } from '@/app/components/app/NotificationCenter';
-import styled from 'styled-components';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { DeckStatus, JobStatus } from '@prisma/client';
 import { redirect } from 'next/navigation';
 import { buildDeckSummary } from '@/lib/decks';
 
-const PageHeader = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-`;
+const pageHeaderStyle: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.75rem',
+};
 
-const Headline = styled.h1`
-  font-family: var(--font-serif);
-  font-size: clamp(2rem, 4vw, 2.6rem);
-  margin: 0;
-`;
+const headlineStyle: CSSProperties = {
+  fontFamily: 'var(--font-serif)',
+  fontSize: 'clamp(2rem, 4vw, 2.6rem)',
+  margin: 0,
+};
 
-const Lead = styled.p`
-  margin: 0;
-  color: rgba(213, 210, 255, 0.76);
-  max-width: 48rem;
-`;
+const leadStyle: CSSProperties = {
+  margin: 0,
+  color: 'rgba(213, 210, 255, 0.76)',
+  maxWidth: '48rem',
+};
 
-const SplitGrid = styled.div`
-  display: grid;
-  gap: 1.6rem;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-`;
+const splitGridStyle: CSSProperties = {
+  display: 'grid',
+  gap: '1.6rem',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+};
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -87,13 +87,13 @@ export default async function DashboardPage() {
 
   return (
     <section style={{ display: 'grid', gap: '2.4rem' }}>
-      <PageHeader>
-        <Headline>Operations dashboard</Headline>
-        <Lead>
+      <div style={pageHeaderStyle}>
+        <h1 style={headlineStyle}>Operations dashboard</h1>
+        <p style={leadStyle}>
           Monitor deck ingestion, tune AI narration, and orchestrate high-fidelity video renders without babysitting progress
           bars.
-        </Lead>
-      </PageHeader>
+        </p>
+      </div>
       <DashboardStats
         deckCount={deckCount}
         completedCount={completedCount}
@@ -110,7 +110,7 @@ export default async function DashboardPage() {
         }}
         health={health}
       />
-      <SplitGrid>
+      <div style={splitGridStyle}>
         <NotificationCenter
           notifications={notifications.map((notification) => ({
             id: notification.id,
@@ -120,7 +120,7 @@ export default async function DashboardPage() {
             read: notification.read,
           }))}
         />
-      </SplitGrid>
+      </div>
       <DeckUploadPanel limits={limits} disabled={health.outOfOrder} />
       <DeckGrid decks={decks} disabled={health.outOfOrder} />
     </section>

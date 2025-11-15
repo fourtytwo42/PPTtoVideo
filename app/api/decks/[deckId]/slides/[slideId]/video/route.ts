@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import { Readable } from "node:stream";
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../../../lib/prisma";
-import { getCurrentUser } from "../../../../../../lib/auth";
+import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth";
 
 export async function GET(_: Request, { params }: { params: { deckId: string; slideId: string } }) {
   const user = await getCurrentUser();
@@ -25,7 +25,7 @@ export async function GET(_: Request, { params }: { params: { deckId: string; sl
     return NextResponse.json({ error: "Video file missing" }, { status: 404 });
   }
 
-  const stream = Readable.toWeb(fs.createReadStream(slide.videoAsset.filePath));
+  const stream = Readable.toWeb(fs.createReadStream(slide.videoAsset.filePath)) as unknown as ReadableStream;
   return new NextResponse(stream, {
     headers: {
       "Content-Type": "video/mp4",

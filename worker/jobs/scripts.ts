@@ -70,7 +70,7 @@ export async function registerScriptProcessor(job: Job<BaseJobPayload>) {
       });
 
       const prompt = buildPrompt(deck, slide);
-      let response: Response;
+      let response: Awaited<ReturnType<typeof fetch>>;
       try {
         response = await fetch(OPENAI_ENDPOINT, {
           method: "POST",

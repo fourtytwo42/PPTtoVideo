@@ -53,7 +53,7 @@ const CTAButton = styled(Link)<{ $variant?: 'solid' | 'ghost' }>`
   backdrop-filter: blur(10px);
   transition: transform 0.25s ease, box-shadow 0.25s ease;
   border: 1px solid
-    ${({ theme, $variant }) => ($variant === 'ghost' ? 'rgba(255, 255, 255, 0.18)' : 'transparent')};
+    ${({ $variant }) => ($variant === 'ghost' ? 'rgba(255, 255, 255, 0.18)' : 'transparent')};
   background: ${({ theme, $variant }) =>
     $variant === 'ghost'
       ? 'rgba(255, 255, 255, 0.05)'

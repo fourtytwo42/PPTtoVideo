@@ -1,4 +1,4 @@
-import { Queue, Worker, QueueEvents, JobsOptions } from "bullmq";
+import { Queue, Worker, QueueEvents, JobsOptions, type Processor } from "bullmq";
 import IORedis from "ioredis";
 import { config } from "../config";
 
@@ -20,7 +20,7 @@ export interface BaseJobPayload {
   slideIds?: string[];
 }
 
-export const jobQueue = new Queue<JobName, void, JobName>("deckforge", {
+export const jobQueue = new Queue<BaseJobPayload, void, JobName>("deckforge", {
   connection,
   defaultJobOptions: {
     removeOnComplete: 100,
@@ -28,11 +28,8 @@ export const jobQueue = new Queue<JobName, void, JobName>("deckforge", {
   },
 });
 
-export function createWorker(
-  name: string,
-  processor: Parameters<typeof Worker<JobName, void, JobName>>[1],
-) {
-  const worker = new Worker<JobName, void, JobName>("deckforge", processor, {
+export function createWorker(name: string, processor: Processor<BaseJobPayload, void, JobName>) {
+  const worker = new Worker<BaseJobPayload, void, JobName>("deckforge", processor, {
     connection,
     concurrency: 2,
     autorun: true,
