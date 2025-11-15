@@ -69,12 +69,23 @@ const SlideButton = styled.button<{ $active: boolean }>`
   cursor: pointer;
   background: ${({ $active }) => ($active ? 'rgba(140, 92, 255, 0.18)' : 'rgba(21, 18, 42, 0.6)')};
   color: ${({ theme }) => theme.colors.text};
+  width: 100%;
+  gap: 0.5rem;
 `;
 
 const SlideLabel = styled.span`
   display: flex;
   align-items: center;
   gap: 0.65rem;
+  min-width: 0;
+`;
+
+const SlideTitle = styled.span`
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 `;
 
 const SlideCheckbox = styled.input`
@@ -949,9 +960,9 @@ export default function DeckWorkspaceClient({
                   }}
                   aria-label={`Select slide ${slide.index}`}
                 />
-                <span>
+                <SlideTitle>
                   {slide.index}. {slide.title ?? 'Untitled slide'}
-                </span>
+                </SlideTitle>
               </SlideLabel>
               <SlideMeta>
                 <span style={{ fontSize: '0.75rem', color: 'rgba(213,210,255,0.7)' }}>{slide.scriptStatus}</span>
