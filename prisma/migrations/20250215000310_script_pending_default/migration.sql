@@ -1,0 +1,3 @@
+ALTER TABLE "Script" ALTER COLUMN "status" SET DEFAULT 'PENDING';
+
+

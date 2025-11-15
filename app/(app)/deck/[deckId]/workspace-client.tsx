@@ -160,23 +160,6 @@ const MetaRow = styled.div`
   color: rgba(213, 210, 255, 0.72);
 `;
 
-const SelectionInfo = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-`;
-
-const SelectionBadge = styled.span`
-  background: rgba(140, 92, 255, 0.16);
-  border: 1px solid rgba(140, 92, 255, 0.4);
-  color: rgba(228, 224, 255, 0.88);
-  padding: 0.35rem 0.75rem;
-  border-radius: ${({ theme }) => theme.radius.sm};
-  font-size: 0.8rem;
-  letter-spacing: 0.04em;
-`;
-
 const Select = styled.select`
   padding: 0.5rem 0.75rem;
   border-radius: ${({ theme }) => theme.radius.sm};
@@ -220,6 +203,48 @@ const ActionButton = styled.button<{ $variant?: 'primary' | 'outline' }>`
   cursor: pointer;
   opacity: ${({ disabled }) => (disabled ? 0.6 : 1)};
   pointer-events: ${({ disabled }) => (disabled ? 'none' : 'auto')};
+`;
+
+const SlideMeta = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+`;
+
+const SlideDeleteButton = styled.button`
+  border: none;
+  background: transparent;
+  color: rgba(255, 108, 140, 0.85);
+  cursor: pointer;
+  padding: 0.2rem;
+  font-size: 0.95rem;
+
+  &:hover {
+    color: rgba(255, 108, 140, 1);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+const PanelActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+`;
+
+const BulkActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+  gap: 0.5rem;
+`;
+
+const FinalActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
 `;
 
 const SlideVisual = styled.div`
@@ -309,6 +334,7 @@ export default function DeckWorkspaceClient({
   const [updatingVoice, setUpdatingVoice] = useState(false);
   const [updatingMode, setUpdatingMode] = useState(false);
   const [generatingSlides, setGeneratingSlides] = useState<string[]>([]);
+  const [deleting, setDeleting] = useState(false);
   const serverScriptsRef = useRef<Record<string, string>>(
     Object.fromEntries(initialDeck.slides.map((slide) => [slide.id, slide.script])),
   );
@@ -455,6 +481,74 @@ export default function DeckWorkspaceClient({
     setDeck((prev) => ({ ...prev, mode: nextMode }));
   };
 
+  const handleDeleteSlides = async (ids: string[]) => {
+    const unique = Array.from(new Set(ids.filter(Boolean)));
+    if (!unique.length) return;
+    const message =
+      unique.length === 1
+        ? 'Delete this slide? This removes its script, audio, and video.'
+        : `Delete ${unique.length} slides? This removes their scripts, audio, and video assets.`;
+    if (!window.confirm(message)) {
+      return;
+    }
+    setDeleting(true);
+    const response = await fetch(`/api/decks/${deck.id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete', slideIds: unique }),
+    });
+    setDeleting(false);
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      window.alert(payload.error ?? 'Unable to delete slides.');
+      return;
+    }
+
+    const idsSet = new Set(unique);
+    let nextSlidesSnapshot: WorkspaceDeck['slides'] = deck.slides;
+
+    setDeck((prev) => {
+      const remainingSlides = prev.slides.filter((slide) => !idsSet.has(slide.id));
+      nextSlidesSnapshot = remainingSlides;
+      const scriptsReady = remainingSlides.filter((slide) => slide.scriptStatus === 'READY').length;
+      const audioReady = remainingSlides.filter((slide) => slide.audioStatus === 'READY').length;
+      const videoReady = remainingSlides.filter((slide) => slide.videoStatus === 'READY').length;
+      return {
+        ...prev,
+        slides: remainingSlides,
+        slideCount: remainingSlides.length,
+        scriptsReady,
+        audioReady,
+        videoReady,
+      };
+    });
+
+    setScriptDrafts((previous) => {
+      const next = { ...previous };
+      unique.forEach((id) => {
+        delete next[id];
+      });
+      return next;
+    });
+
+    setGeneratingSlides((previous) => previous.filter((id) => !idsSet.has(id)));
+
+    setSelectedSlideIds((previous) => {
+      const filtered = previous.filter((id) => !idsSet.has(id));
+      if (filtered.length) return filtered;
+      if (nextSlidesSnapshot[0]) {
+        return [nextSlidesSnapshot[0].id];
+      }
+      return [];
+    });
+
+    if (idsSet.has(selectedSlideId)) {
+      setSelectedSlideId(nextSlidesSnapshot[0]?.id ?? '');
+    } else if (!selectedSlideId && nextSlidesSnapshot[0]) {
+      setSelectedSlideId(nextSlidesSnapshot[0].id);
+    }
+  };
+
   const describeJob = (jobType: string) =>
     jobType
       .split('_')
@@ -569,18 +663,6 @@ export default function DeckWorkspaceClient({
         ? previous.filter((id) => id !== slideId)
         : [...previous, slideId],
     );
-  };
-
-  const selectOnly = (slideId: string) => {
-    setSelectedSlideIds([slideId]);
-  };
-
-  const selectAll = () => {
-    setSelectedSlideIds(deck.slides.map((slide) => slide.id));
-  };
-
-  const clearSelection = () => {
-    setSelectedSlideIds([]);
   };
 
   const handleSlideClick = (slideId: string) => {
@@ -810,6 +892,16 @@ export default function DeckWorkspaceClient({
         </section>
       )}
 
+      <BulkActions>
+        <ActionButton
+          $variant="outline"
+          onClick={() => handleDeleteSlides(resolvedSelection)}
+          disabled={!resolvedSelection.length || deleting}
+        >
+          {deleting ? 'Deleting…' : `Delete selected (${resolvedSelection.length})`}
+        </ActionButton>
+      </BulkActions>
+
       <Split>
         <Sidebar>
           {deck.slides.map((slide) => (
@@ -832,16 +924,34 @@ export default function DeckWorkspaceClient({
                   {slide.index}. {slide.title ?? 'Untitled slide'}
                 </span>
               </SlideLabel>
-              <span style={{ fontSize: '0.75rem', color: 'rgba(213,210,255,0.7)' }}>{slide.scriptStatus}</span>
+              <SlideMeta>
+                <span style={{ fontSize: '0.75rem', color: 'rgba(213,210,255,0.7)' }}>{slide.scriptStatus}</span>
+                <SlideDeleteButton
+                  type="button"
+                  aria-label={`Delete slide ${slide.index}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    handleDeleteSlides([slide.id]);
+                  }}
+                  disabled={deleting}
+                >
+                  🗑
+                </SlideDeleteButton>
+              </SlideMeta>
             </SlideButton>
           ))}
         </Sidebar>
         {selectedSlide && (
           <EditorPanel>
-            <div style={{ display: 'grid', gap: '0.35rem' }}>
-              <h2 style={{ margin: 0, fontSize: '1.4rem' }}>{selectedSlide.title ?? `Slide ${selectedSlide.index}`}</h2>
-              <p style={{ margin: 0, color: 'rgba(213,210,255,0.75)' }}>{selectedSlide.body}</p>
-            </div>
+            <PanelActions>
+              <ActionButton
+                $variant="outline"
+                onClick={() => handleDeleteSlides([selectedSlide.id])}
+                disabled={deleting}
+              >
+                {deleting ? 'Deleting…' : 'Delete slide'}
+              </ActionButton>
+            </PanelActions>
             {slideImageUrl && (
               <div style={{ display: 'grid', gap: '0.35rem' }}>
                 <FieldLabel>Slide image</FieldLabel>
@@ -855,52 +965,23 @@ export default function DeckWorkspaceClient({
                 )}
               </div>
             )}
-            <SelectionInfo>
-              <SelectionBadge>
-                {selectionCount} selected / {deck.slideCount}
-              </SelectionBadge>
-              <ActionButton $variant="outline" onClick={selectAll}>
-                Select all
-              </ActionButton>
-              <ActionButton
-                $variant="outline"
-                onClick={() => (selectedSlide ? selectOnly(selectedSlide.id) : undefined)}
-                disabled={!selectedSlide}
-              >
-                Select current
-              </ActionButton>
-              <ActionButton
-                $variant="outline"
-                onClick={clearSelection}
-                disabled={selectedSlideIds.length === 0}
-              >
-                Clear selection
-              </ActionButton>
-            </SelectionInfo>
             <div style={{ display: 'grid', gap: '0.35rem' }}>
               <FieldLabel>Script text</FieldLabel>
-              {hasCurrentScript ? (
-                <Textarea
-                  value={currentScriptDraft}
-                  onChange={(event) =>
-                    setScriptDrafts((drafts) => ({
-                      ...drafts,
-                      [selectedSlide.id]: event.target.value,
-                    }))
-                  }
-                />
-              ) : (
-                <div
-                  style={{
-                    border: '1px dashed rgba(255, 255, 255, 0.25)',
-                    borderRadius: '0.5rem',
-                    padding: '1rem',
-                    color: 'rgba(213,210,255,0.7)',
-                  }}
-                >
-                  No script generated yet. Use the Generate script button to draft the narration for this slide.
-                </div>
+              {!hasCurrentScript && (
+                <span style={{ fontSize: '0.85rem', color: 'rgba(213,210,255,0.7)' }}>
+                  No narration yet. Generate with AI or start typing to draft manually.
+                </span>
               )}
+              <Textarea
+                value={currentScriptDraft}
+                onChange={(event) =>
+                  setScriptDrafts((drafts) => ({
+                    ...drafts,
+                    [selectedSlide.id]: event.target.value,
+                  }))
+                }
+                placeholder="Use Generate script or type your own narration..."
+              />
             </div>
             <ActionRow>
               <ActionButton onClick={() => handleSave(selectedSlide.id)} disabled={saving || !hasCurrentScript}>
@@ -924,13 +1005,6 @@ export default function DeckWorkspaceClient({
                 onClick={() => triggerJob('video', 'selected')}
               >
                 Render slide video for selection
-              </ActionButton>
-              <ActionButton
-                $variant="outline"
-                onClick={() => triggerJob('final')}
-                disabled={!deck.finalVideoPath && deck.videoReady < deck.slideCount}
-              >
-                Assemble final video
               </ActionButton>
               <ActionButton
                 $variant="outline"
@@ -992,6 +1066,15 @@ export default function DeckWorkspaceClient({
           </EditorPanel>
         )}
       </Split>
+      <FinalActions>
+        <ActionButton
+          $variant="outline"
+          onClick={() => triggerJob('final')}
+          disabled={!deck.finalVideoPath && deck.videoReady < deck.slideCount}
+        >
+          Assemble final video
+        </ActionButton>
+      </FinalActions>
       {finalVideoUrl && (
         <MediaPreview>
           <MediaHeading>Final video preview</MediaHeading>

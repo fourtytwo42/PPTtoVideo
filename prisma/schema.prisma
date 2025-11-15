@@ -100,12 +100,13 @@ model Script {
   slideId       String   @unique
   content       String
   language      String   @default("en")
-  status        ScriptStatus @default(READY)
+  status        ScriptStatus @default(PENDING)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
 
 enum ScriptStatus {
+  PENDING
   READY
   REGENERATING
   FAILED

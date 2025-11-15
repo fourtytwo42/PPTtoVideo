@@ -67,6 +67,24 @@ export async function POST(request: NextRequest, { params }: { params: { deckId:
     slideIds = matches.map((match) => match.id);
   }
 
+  if (body.action === "delete" && slideIds?.length) {
+    await prisma.audioAsset.deleteMany({
+      where: { slideId: { in: slideIds } },
+    });
+    await prisma.videoAsset.deleteMany({
+      where: { slideId: { in: slideIds } },
+    });
+    await prisma.slide.deleteMany({
+      where: { deckId: deck.id, id: { in: slideIds } },
+    });
+    const remainingSlides = await prisma.slide.count({ where: { deckId: deck.id } });
+    await prisma.deck.update({
+      where: { id: deck.id },
+      data: { slideCount: remainingSlides },
+    });
+    return NextResponse.json({ ok: true, deleted: slideIds.length });
+  }
+
   if (body.action === "generate" && body.target === "audio") {
     try {
       await assertWithinConcurrencyLimit(user.id);

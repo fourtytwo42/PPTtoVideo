@@ -17,7 +17,7 @@ import {
   markJobRunning,
   markJobSucceeded,
 } from "../../lib/jobs/lifecycle";
-import { DeckStatus, SourceType, ProcessingMode, JobType, JobStatus } from "@prisma/client";
+import { DeckStatus, SourceType, ProcessingMode, JobType, JobStatus, ScriptStatus } from "@prisma/client";
 import { getSoftLimits } from "../../lib/settings";
 
 const parser = new XMLParser({ ignoreAttributes: false, removeNSPrefix: true });
@@ -107,6 +107,7 @@ export async function registerIngestionProcessor(job: Job<BaseJobPayload>) {
         data: {
           slideId: created.id,
           content: buildInitialScript(slide),
+          status: ScriptStatus.PENDING,
         },
       });
 
@@ -159,9 +160,8 @@ function formatError(error: unknown) {
   return typeof error === "string" ? error : "Unknown error";
 }
 
-function buildInitialScript(slide: { title?: string; body?: string | null; notes?: string | null }) {
-  const parts = [slide.title, slide.body, slide.notes].filter(Boolean);
-  return parts.join("\n\n");
+function buildInitialScript(_: { title?: string; body?: string | null; notes?: string | null }) {
+  return "";
 }
 
 async function enrichSlideContent(
