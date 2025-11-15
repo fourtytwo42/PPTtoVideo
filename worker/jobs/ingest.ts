@@ -49,23 +49,51 @@ export async function registerIngestionProcessor(job: Job<BaseJobPayload>) {
     ]);
 
     const sourceFile = deck.sourcePath;
+    const sourceExt = path.extname(sourceFile).toLowerCase();
     const buffer = await fs.promises.readFile(sourceFile);
 
     await prisma.audioAsset.deleteMany({ where: { deckId: deck.id } });
     await prisma.videoAsset.deleteMany({ where: { deckId: deck.id } });
+    await prisma.script.deleteMany({ where: { slide: { deckId: deck.id } } });
     await prisma.slide.deleteMany({ where: { deckId: deck.id } });
 
     let slides: { index: number; title?: string; body?: string; notes?: string }[] = [];
 
     const limits = await getSoftLimits();
     const warnings = Array.isArray(deck.warnings) ? [...(deck.warnings as string[])] : [];
+    const needsOfficeConversion = sourceExt === ".ppt";
 
-    if (deck.sourceType === SourceType.PPTX) {
-      slides = await extractSlidesFromPptx(buffer);
-      await renderPptxSlides(deck.id, sourceFile);
-    } else {
+    if (deck.sourceType === SourceType.PDF || sourceExt === ".pdf") {
       slides = await extractSlidesFromPdf(buffer);
       await renderPdfSlides(deck.id, sourceFile);
+    } else if (deck.sourceType === SourceType.PPTX && !needsOfficeConversion) {
+      try {
+        slides = await extractSlidesFromPptx(buffer);
+      } catch (error) {
+        console.warn(`[ingestion] failed to extract PPTX text for deck ${deck.id}:`, error);
+        slides = [];
+      }
+      await renderPptxSlides(deck.id, sourceFile);
+
+      if (!slides.length) {
+        const converted = await convertOfficeToPdf(sourceFile);
+        try {
+          const pdfBuffer = await fs.promises.readFile(converted.pdfPath);
+          slides = await extractSlidesFromPdf(pdfBuffer);
+          await renderPdfSlides(deck.id, converted.pdfPath);
+        } finally {
+          await converted.cleanup();
+        }
+      }
+    } else {
+      const converted = needsOfficeConversion ? await convertOfficeToPdf(sourceFile) : null;
+      const pdfPath = converted?.pdfPath ?? sourceFile;
+      const pdfBuffer = converted ? await fs.promises.readFile(pdfPath) : buffer;
+      slides = await extractSlidesFromPdf(pdfBuffer);
+      await renderPdfSlides(deck.id, pdfPath);
+      if (converted) {
+        await converted.cleanup();
+      }
     }
 
     if (limits.maxSlides && limits.maxSlides > 0 && slides.length > limits.maxSlides) {
@@ -316,6 +344,7 @@ async function renderPptxSlides(deckId: string, sourceFile: string) {
     await fs.promises.copyFile(path.join(tmpDir, file), target);
     index += 1;
   }
+  await fs.promises.rm(tmpDir, { recursive: true, force: true }).catch(() => undefined);
 }
 
 async function renderPdfSlides(deckId: string, sourceFile: string) {
@@ -328,6 +357,24 @@ async function renderPdfSlides(deckId: string, sourceFile: string) {
     await fs.promises.copyFile(path.join(tmpDir, file), slideImagePath(deckId, index));
     index += 1;
   }
+  await fs.promises.rm(tmpDir, { recursive: true, force: true }).catch(() => undefined);
+}
+
+async function convertOfficeToPdf(sourceFile: string) {
+  const tmpDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "deckforge-convert-"));
+  const libreoffice = process.env.LIBREOFFICE_PATH ?? "soffice";
+  await runCommand(libreoffice, ["--headless", "--convert-to", "pdf", "--outdir", tmpDir, sourceFile]);
+  const files = await fs.promises.readdir(tmpDir);
+  const pdfName = files.find((file) => file.toLowerCase().endsWith(".pdf"));
+  if (!pdfName) {
+    await fs.promises.rm(tmpDir, { recursive: true, force: true }).catch(() => undefined);
+    throw new Error("Unable to convert presentation to PDF.");
+  }
+  const pdfPath = path.join(tmpDir, pdfName);
+  return {
+    pdfPath,
+    cleanup: () => fs.promises.rm(tmpDir, { recursive: true, force: true }).catch(() => undefined),
+  };
 }
 
 function extractIndex(entry: string) {
