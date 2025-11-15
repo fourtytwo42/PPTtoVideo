@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { formatRelativeTime } from '@/lib/format';
 import type { WorkspaceDeck } from '@/lib/decks';
@@ -222,6 +222,33 @@ const ActionButton = styled.button<{ $variant?: 'primary' | 'outline' }>`
   pointer-events: ${({ disabled }) => (disabled ? 'none' : 'auto')};
 `;
 
+const MediaPreview = styled.div`
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: ${({ theme }) => theme.radius.md};
+  padding: 1rem;
+  background: rgba(12, 10, 28, 0.65);
+  display: grid;
+  gap: 0.75rem;
+`;
+
+const MediaHeading = styled.h3`
+  margin: 0;
+  font-size: 1rem;
+  color: rgba(213, 210, 255, 0.9);
+`;
+
+const MediaBlock = styled.div`
+  display: grid;
+  gap: 0.35rem;
+`;
+
+const MediaLabel = styled.span`
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(213, 210, 255, 0.75);
+`;
+
 interface VoiceOption {
   id: string;
   name: string;
@@ -299,6 +326,27 @@ export default function DeckWorkspaceClient({
     ? [{ id: deck.voiceId, name: deck.voiceLabel ?? deck.voiceId }]
     : [];
   const currentVoiceId = deck.voiceId ?? voiceOptions[0]?.id ?? '';
+
+  const slideAudioUrl = useMemo(() => {
+    if (!selectedSlide || selectedSlide.audioStatus !== 'READY') {
+      return null;
+    }
+    return `/api/decks/${deck.id}/slides/${selectedSlide.id}/audio?v=${deck.audioReady}-${selectedSlide.id}`;
+  }, [deck.audioReady, deck.id, selectedSlide]);
+
+  const slideVideoUrl = useMemo(() => {
+    if (!selectedSlide || selectedSlide.videoStatus !== 'READY') {
+      return null;
+    }
+    return `/api/decks/${deck.id}/slides/${selectedSlide.id}/video?v=${deck.videoReady}-${selectedSlide.id}`;
+  }, [deck.id, deck.videoReady, selectedSlide]);
+
+  const finalVideoUrl = useMemo(() => {
+    if (!deck.finalVideoPath) {
+      return null;
+    }
+    return `/api/decks/${deck.id}/final?v=${deck.videoReady}-${deck.progress.final.ready}`;
+  }, [deck.finalVideoPath, deck.id, deck.progress.final.ready, deck.videoReady]);
 
   const updateScriptModel = async (nextModel: string) => {
     if (!nextModel || nextModel === deck.scriptModel) return;
@@ -783,9 +831,46 @@ export default function DeckWorkspaceClient({
                 </ActionButton>
               )}
             </ActionRow>
+            {(slideAudioUrl || slideVideoUrl) && (
+              <MediaPreview>
+                <MediaHeading>Slide media preview</MediaHeading>
+                {slideAudioUrl && (
+                  <MediaBlock>
+                    <MediaLabel>Audio</MediaLabel>
+                    <audio controls preload="none" src={slideAudioUrl} style={{ width: '100%' }}>
+                      Your browser does not support the audio element.
+                    </audio>
+                  </MediaBlock>
+                )}
+                {slideVideoUrl && (
+                  <MediaBlock>
+                    <MediaLabel>Video</MediaLabel>
+                    <video
+                      controls
+                      preload="none"
+                      src={slideVideoUrl}
+                      style={{ width: '100%', borderRadius: '0.5rem' }}
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                  </MediaBlock>
+                )}
+              </MediaPreview>
+            )}
           </EditorPanel>
         )}
       </Split>
+      {finalVideoUrl && (
+        <MediaPreview>
+          <MediaHeading>Final video preview</MediaHeading>
+          <MediaBlock>
+            <MediaLabel>Combined MP4</MediaLabel>
+            <video controls preload="none" src={finalVideoUrl} style={{ width: '100%', borderRadius: '0.75rem' }}>
+              Your browser does not support the video tag.
+            </video>
+          </MediaBlock>
+        </MediaPreview>
+      )}
     </Layout>
   );
 }
