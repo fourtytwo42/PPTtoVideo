@@ -135,6 +135,7 @@ export async function registerIngestionProcessor(job: Job<BaseJobPayload>) {
       await enqueueJob("generate-scripts", { deckId: deck.id, userId, jobId: scriptsJob.id });
     }
   } catch (error) {
+    console.error(`[ingestion] failed for deck ${deck.id}`, error);
     await prisma.deck.update({ where: { id: deck.id }, data: { status: DeckStatus.FAILED } });
     await markJobFailed(jobId, error);
     await createNotification(userId, "Deck ingestion failed", formatError(error));

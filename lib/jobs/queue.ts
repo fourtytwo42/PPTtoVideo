@@ -6,6 +6,8 @@ const connection = new IORedis(config.redisUrl, {
   maxRetriesPerRequest: null,
 });
 
+const events = new QueueEvents("deckforge", { connection });
+
 export type JobName =
   | "ingest-deck"
   | "generate-scripts"
@@ -28,16 +30,27 @@ export const jobQueue = new Queue<BaseJobPayload, void, JobName>("deckforge", {
   },
 });
 
-export function createWorker(name: string, processor: Processor<BaseJobPayload, void, JobName>) {
-  const worker = new Worker<BaseJobPayload, void, JobName>("deckforge", processor, {
-    connection,
-    concurrency: 2,
-    autorun: true,
-  });
+type ProcessorMap = Partial<Record<JobName, Processor<BaseJobPayload, void, JobName>>>;
 
-  const events = new QueueEvents("deckforge", { connection });
+export function createWorker(processors: ProcessorMap) {
+  const worker = new Worker<BaseJobPayload, void, JobName>(
+    "deckforge",
+    async (job) => {
+      const handler = processors[job.name];
+      if (!handler) {
+        throw new Error(`No processor registered for job ${job.name}`);
+      }
+      return handler(job);
+    },
+    {
+      connection,
+      concurrency: 5,
+      autorun: true,
+    },
+  );
+
   events.on("failed", ({ jobId, failedReason }) => {
-    console.error(`[${name}] job ${jobId} failed`, failedReason);
+    console.error(`[worker] job ${jobId} failed`, failedReason);
   });
 
   return worker;
