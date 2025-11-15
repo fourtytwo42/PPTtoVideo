@@ -1,0 +1,233 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = env("DATABASE_PROVIDER")
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String
+  role          Role     @default(USER)
+  passwordHash  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  decks         Deck[]
+  jobs          Job[]    @relation("JobOwner")
+  auditLogs     AuditLog[]
+  accounts      Account[]
+  sessions      Session[]
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model Deck {
+  id             String      @id @default(cuid())
+  title          String
+  description    String?
+  owner          User        @relation(fields: [ownerId], references: [id])
+  ownerId        String
+  sourcePath     String
+  sourceType     SourceType
+  slideCount     Int         @default(0)
+  status         DeckStatus  @default(INGESTING)
+  mode           ProcessingMode @default(REVIEW)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  slides         Slide[]
+  jobs           Job[]
+  audioAssets    AudioAsset[]
+  videoAssets    VideoAsset[]
+  finalVideoPath String?
+  finalVideoDuration Float?
+  warnings       Json        @default(json("[]"))
+}
+
+enum SourceType {
+  PPTX
+  PDF
+}
+
+enum DeckStatus {
+  INGESTING
+  READY_FOR_REVIEW
+  GENERATING
+  COMPLETE
+  FAILED
+}
+
+enum ProcessingMode {
+  REVIEW
+  ONE_SHOT
+}
+
+model Slide {
+  id            String       @id @default(cuid())
+  deck          Deck         @relation(fields: [deckId], references: [id])
+  deckId        String
+  index         Int
+  title         String?
+  body          String?
+  speakerNotes  String?
+  script        Script?
+  imagePath     String?
+  embeddedVideo String?
+  audioAsset    AudioAsset?
+  videoAsset    VideoAsset?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@unique([deckId, index])
+}
+
+model Script {
+  id            String   @id @default(cuid())
+  slide         Slide    @relation(fields: [slideId], references: [id])
+  slideId       String   @unique
+  content       String
+  language      String   @default("en")
+  status        ScriptStatus @default(READY)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+enum ScriptStatus {
+  READY
+  REGENERATING
+  FAILED
+}
+
+model AudioAsset {
+  id          String       @id @default(cuid())
+  slide       Slide?       @relation(fields: [slideId], references: [id])
+  slideId     String?      @unique
+  deck        Deck         @relation(fields: [deckId], references: [id])
+  deckId      String
+  filePath    String
+  duration    Float?
+  status      AssetStatus  @default(PENDING)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model VideoAsset {
+  id          String       @id @default(cuid())
+  slide       Slide?       @relation(fields: [slideId], references: [id])
+  slideId     String?      @unique
+  deck        Deck         @relation(fields: [deckId], references: [id])
+  deckId      String
+  filePath    String
+  duration    Float?
+  status      AssetStatus  @default(PENDING)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+enum AssetStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+model Job {
+  id          String     @id @default(cuid())
+  deck        Deck       @relation(fields: [deckId], references: [id])
+  deckId      String
+  owner       User       @relation("JobOwner", fields: [ownerId], references: [id])
+  ownerId     String
+  type        JobType
+  status      JobStatus  @default(QUEUED)
+  payload     Json
+  progress    Float      @default(0)
+  error       String?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+enum JobType {
+  INGEST_DECK
+  GENERATE_SCRIPTS
+  GENERATE_AUDIO
+  GENERATE_VIDEO
+  ASSEMBLE_FINAL
+}
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+model Notification {
+  id          String     @id @default(cuid())
+  user        User       @relation(fields: [userId], references: [id])
+  userId      String
+  title       String
+  message     String
+  read        Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+}
+
+model AuditLog {
+  id          String     @id @default(cuid())
+  actor       User?      @relation(fields: [actorId], references: [id])
+  actorId     String?
+  action      String
+  entityType  String
+  entityId    String
+  metadata    Json?
+  createdAt   DateTime   @default(now())
+}
+
+model SystemSetting {
+  id            String   @id @default(cuid())
+  key           String   @unique
+  value         Json
+  updatedAt     DateTime @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
