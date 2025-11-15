@@ -268,8 +268,34 @@ function buildOpenAIRequest({
 
   const maxOutputTokens = Math.max(800, contexts.length * 320);
 
+  const responseFormat = {
+    type: "json_schema",
+    name: "slides_response",
+    schema: {
+      type: "object",
+      additionalProperties: false,
+      required: ["slides"],
+      properties: {
+        slides: {
+          type: "array",
+          minItems: 1,
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["slide", "narration"],
+            properties: {
+              slide: { type: "number" },
+              narration: { type: "string" },
+            },
+          },
+        },
+      },
+    },
+  } as const;
+
   return {
     model,
+    text: { format: responseFormat },
     input: [
       {
         role: "system",
@@ -285,9 +311,11 @@ function buildOpenAIRequest({
 }
 
 async function parseResponse(data: any, fallbackIndexes: number[]) {
-  const textBlock = data?.output
-    ?.flatMap((entry: any) => entry.content || [])
-    .find((block: any) => block.type === "output_text")?.text;
+  const textBlock =
+    data?.output
+      ?.flatMap((entry: any) => entry.content || [])
+      .find((block: any) => block.type === "output_text")?.text ??
+    (Array.isArray(data?.output_text) ? data.output_text.join("\n") : undefined);
 
   if (!textBlock) {
     throw new Error("Model response did not include JSON output");
