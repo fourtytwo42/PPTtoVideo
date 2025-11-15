@@ -54,19 +54,6 @@ export async function POST(request: NextRequest, { params }: { params: { deckId:
     return NextResponse.json({ error: "Deck not found" }, { status: 404 });
   }
 
-  if (
-    body.action === "generate" &&
-    ["audio", "video", "final"].includes(body.target) &&
-    deck.mode === ProcessingMode.REVIEW
-  ) {
-    return NextResponse.json(
-      {
-        error: "Media generation is disabled while this deck is in review-first mode. Switch to one-shot to continue.",
-      },
-      { status: 400 },
-    );
-  }
-
   const requestedSlideIds = parseSlideIds(body.slideIds);
   let slideIds: string[] | undefined = undefined;
   if (requestedSlideIds?.length) {

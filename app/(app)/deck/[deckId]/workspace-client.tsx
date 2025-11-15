@@ -308,6 +308,7 @@ export default function DeckWorkspaceClient({
   const [updatingTtsModel, setUpdatingTtsModel] = useState(false);
   const [updatingVoice, setUpdatingVoice] = useState(false);
   const [updatingMode, setUpdatingMode] = useState(false);
+  const [generatingSlides, setGeneratingSlides] = useState<string[]>([]);
   const serverScriptsRef = useRef<Record<string, string>>(
     Object.fromEntries(initialDeck.slides.map((slide) => [slide.id, slide.script])),
   );
@@ -375,8 +376,11 @@ export default function DeckWorkspaceClient({
     }
     return `/api/decks/${deck.id}/final?v=${deck.videoReady}-${deck.progress.final.ready}`;
   }, [deck.finalVideoPath, deck.id, deck.progress.final.ready, deck.videoReady]);
-
-  const mediaGenerationLocked = deck.mode === 'REVIEW';
+  const currentScriptDraft = selectedSlide ? scriptDrafts[selectedSlide.id] ?? '' : '';
+  const hasCurrentScript = currentScriptDraft.trim().length > 0;
+  const selectionGenerating = resolvedSelection.some((id) => generatingSlides.includes(id));
+  const generationButtonLabel =
+    selectionCount > 1 ? 'Generate scripts' : hasCurrentScript ? 'Regenerate script' : 'Generate script';
 
   const updateScriptModel = async (nextModel: string) => {
     if (!nextModel || nextModel === deck.scriptModel) return;
@@ -501,6 +505,12 @@ export default function DeckWorkspaceClient({
           incomingDeck.slides.map((slide) => [slide.id, slide.script]),
         );
         setDeck(incomingDeck);
+        setGeneratingSlides((previous) =>
+          previous.filter((id) => {
+            const match = incomingDeck.slides.find((slide) => slide.id === id);
+            return match ? match.script.length === 0 : false;
+          }),
+        );
         if (Array.isArray(payload.jobs)) {
           setRecentJobs(payload.jobs);
         }
@@ -607,6 +617,12 @@ export default function DeckWorkspaceClient({
     if (!response.ok) {
       const payload = await response.json().catch(() => ({}));
       window.alert(payload.error ?? 'Unable to queue script generation job.');
+    } else {
+      const trackedIds =
+        scope === 'all' ? deck.slides.map((slide) => slide.id) : slideIds ?? deck.slides.map((slide) => slide.id);
+      if (trackedIds.length) {
+        setGeneratingSlides((previous) => Array.from(new Set([...previous, ...trackedIds])));
+      }
     }
   };
 
@@ -663,6 +679,24 @@ export default function DeckWorkspaceClient({
       )}
 
       <SummaryGrid>
+        <SummaryCard>
+          <SummaryLabel>Processing mode</SummaryLabel>
+          <Select
+            value={deck.mode}
+            onChange={(event) => updateProcessingMode(event.target.value as 'REVIEW' | 'ONE_SHOT')}
+            disabled={updatingMode}
+          >
+            <option value="REVIEW">Review first</option>
+            <option value="ONE_SHOT">One-shot</option>
+          </Select>
+          <SummaryNote>
+            {updatingMode
+              ? 'Updating…'
+              : deck.mode === 'REVIEW'
+              ? 'Manual media steps allowed'
+              : 'Media jobs auto after scripts'}
+          </SummaryNote>
+        </SummaryCard>
         <SummaryCard>
           <SummaryLabel>Processing mode</SummaryLabel>
           <Select
@@ -845,41 +879,56 @@ export default function DeckWorkspaceClient({
             </SelectionInfo>
             <div style={{ display: 'grid', gap: '0.35rem' }}>
               <FieldLabel>Script text</FieldLabel>
-              <Textarea
-                value={scriptDrafts[selectedSlide.id] ?? ''}
-                onChange={(event) =>
-                  setScriptDrafts((drafts) => ({
-                    ...drafts,
-                    [selectedSlide.id]: event.target.value,
-                  }))
-                }
-              />
+              {hasCurrentScript ? (
+                <Textarea
+                  value={currentScriptDraft}
+                  onChange={(event) =>
+                    setScriptDrafts((drafts) => ({
+                      ...drafts,
+                      [selectedSlide.id]: event.target.value,
+                    }))
+                  }
+                />
+              ) : (
+                <div
+                  style={{
+                    border: '1px dashed rgba(255, 255, 255, 0.25)',
+                    borderRadius: '0.5rem',
+                    padding: '1rem',
+                    color: 'rgba(213,210,255,0.7)',
+                  }}
+                >
+                  No script generated yet. Use the Generate script button to draft the narration for this slide.
+                </div>
+              )}
             </div>
             <ActionRow>
-              <ActionButton onClick={() => handleSave(selectedSlide.id)} disabled={saving}>
+              <ActionButton onClick={() => handleSave(selectedSlide.id)} disabled={saving || !hasCurrentScript}>
                 {saving ? 'Saving…' : 'Save script'}
               </ActionButton>
-              <ActionButton $variant="outline" onClick={() => queueScripts('selected')}>
-                Regenerate selected with AI
+              <ActionButton
+                $variant="outline"
+                onClick={() => queueScripts('selected')}
+                disabled={selectionGenerating}
+              >
+                {selectionGenerating ? 'Generating…' : generationButtonLabel}
               </ActionButton>
               <ActionButton
                 $variant="outline"
                 onClick={() => triggerJob('audio', 'selected')}
-                disabled={mediaGenerationLocked}
               >
                 Generate audio for selection
               </ActionButton>
               <ActionButton
                 $variant="outline"
                 onClick={() => triggerJob('video', 'selected')}
-                disabled={mediaGenerationLocked}
               >
                 Render slide video for selection
               </ActionButton>
               <ActionButton
                 $variant="outline"
                 onClick={() => triggerJob('final')}
-                disabled={mediaGenerationLocked || (!deck.finalVideoPath && deck.videoReady < deck.slideCount)}
+                disabled={!deck.finalVideoPath && deck.videoReady < deck.slideCount}
               >
                 Assemble final video
               </ActionButton>
@@ -914,11 +963,6 @@ export default function DeckWorkspaceClient({
                 </ActionButton>
               )}
             </ActionRow>
-            {mediaGenerationLocked && (
-              <p style={{ color: '#FF9BB4', margin: 0 }}>
-                Media generation is disabled while this deck is in review-first mode. Switch to one-shot when scripts are ready.
-              </p>
-            )}
             {(slideAudioUrl || slideVideoUrl) && (
               <MediaPreview>
                 <MediaHeading>Slide media preview</MediaHeading>
