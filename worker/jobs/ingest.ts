@@ -213,6 +213,7 @@ async function enrichSlideContent(
 
   return {
     ...slide,
+    title: deriveTitle(slide, combinedBody),
     body: combinedBody || null,
     ocrText: ocrText && ocrText.length > 0 ? ocrText : null,
     needsImageContext,
@@ -221,6 +222,29 @@ async function enrichSlideContent(
 
 function textLength(body?: string | null, notes?: string | null) {
   return (body?.length ?? 0) + (notes?.length ?? 0);
+}
+
+function deriveTitle(
+  slide: { title?: string; notes?: string | null; index: number },
+  combinedBody: string,
+) {
+  const explicit = slide.title?.trim();
+  if (explicit) return truncateTitle(explicit);
+
+  const source =
+    combinedBody ||
+    slide.notes ||
+    "";
+  const candidate = source
+    .split(/\r?\n/)
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .find((line) => line.length > 0);
+  if (candidate) return truncateTitle(candidate);
+  return `Slide ${slide.index}`;
+}
+
+function truncateTitle(text: string, max = 80) {
+  return text.length > max ? `${text.slice(0, max).trimEnd()}…` : text;
 }
 
 async function extractTextFromImage(deckId: string, slideIndex: number) {
