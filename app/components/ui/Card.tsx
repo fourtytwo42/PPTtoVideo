@@ -3,9 +3,9 @@
 import { Card as MuiCard, CardProps as MuiCardProps, CardContent } from '@mui/material';
 import { forwardRef } from 'react';
 
-export interface CardProps extends MuiCardProps {
+export interface CardProps extends Omit<MuiCardProps, 'content'> {
   elevation?: number;
-  content?: boolean; // If true, wrap children in CardContent
+  useContent?: boolean; // If true, wrap children in CardContent
 }
 
 /**
@@ -13,7 +13,7 @@ export interface CardProps extends MuiCardProps {
  * Replaces all custom styled card/panel components.
  */
 export const Card = forwardRef<HTMLDivElement, CardProps>(
-  ({ elevation = 2, children, sx, content = false, ...props }, ref) => {
+  ({ elevation = 2, children, sx, useContent = false, ...props }, ref) => {
     return (
       <MuiCard
         ref={ref}
@@ -27,7 +27,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
         }}
         {...props}
       >
-        {content ? <CardContent sx={{ padding: '0 !important' }}>{children}</CardContent> : children}
+        {useContent ? <CardContent sx={{ padding: '0 !important' }}>{children}</CardContent> : children}
       </MuiCard>
     );
   }
