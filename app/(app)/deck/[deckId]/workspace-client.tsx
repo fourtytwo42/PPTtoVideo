@@ -832,24 +832,6 @@ export default function DeckWorkspaceClient({
           </SummaryNote>
         </SummaryCard>
         <SummaryCard>
-          <SummaryLabel>Processing mode</SummaryLabel>
-          <Select
-            value={deck.mode}
-            onChange={(event) => updateProcessingMode(event.target.value as 'REVIEW' | 'ONE_SHOT')}
-            disabled={updatingMode}
-          >
-            <option value="REVIEW">Review first</option>
-            <option value="ONE_SHOT">One-shot</option>
-          </Select>
-          <SummaryNote>
-            {updatingMode
-              ? 'Updating…'
-              : deck.mode === 'REVIEW'
-              ? 'Scripts only until approval'
-              : 'Scripts + media allowed'}
-          </SummaryNote>
-        </SummaryCard>
-        <SummaryCard>
           <SummaryLabel>Slides</SummaryLabel>
           <SummaryValue>{deck.slideCount}</SummaryValue>
           <SummaryNote>Total scope</SummaryNote>

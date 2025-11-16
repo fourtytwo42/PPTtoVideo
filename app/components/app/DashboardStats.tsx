@@ -1,40 +1,9 @@
 'use client';
 
-import styled from 'styled-components';
+import { Grid, Typography, Box } from '@mui/material';
 import { useMemo } from 'react';
 import { formatDuration } from '@/lib/format';
-
-const Grid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.2rem;
-`;
-
-const Tile = styled.div`
-  background: ${({ theme }) => theme.colors.surfaceStrong};
-  border-radius: ${({ theme }) => theme.radius.md};
-  padding: 1.4rem 1.6rem;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  display: grid;
-  gap: 0.45rem;
-`;
-
-const Label = styled.span`
-  font-size: 0.8rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(213, 210, 255, 0.75);
-`;
-
-const Value = styled.span`
-  font-size: 1.5rem;
-  font-weight: 600;
-`;
-
-const Subtle = styled.span`
-  font-size: 0.85rem;
-  color: ${({ theme }) => theme.colors.muted};
-`;
+import { Card } from '@/app/components/ui/Card';
 
 interface JobSnapshot {
   queued: number;
@@ -71,37 +40,73 @@ export function DashboardStats({
   }, [jobSnapshot.failedToday, jobSnapshot.succeededToday]);
 
   return (
-    <Grid>
-      <Tile>
-        <Label>Decks managed</Label>
-        <Value>{deckCount}</Value>
-        <Subtle>{completedCount} complete • {inFlightCount} in-flight</Subtle>
-      </Tile>
-      <Tile>
-        <Label>Total slides processed</Label>
-        <Value>{slideCount}</Value>
-        <Subtle>Across {deckCount} decks</Subtle>
-      </Tile>
-      <Tile>
-        <Label>Runtime delivered</Label>
-        <Value>{formatDuration(deliveredSeconds)}</Value>
-        <Subtle>Final MP4 outputs</Subtle>
-      </Tile>
-      <Tile>
-        <Label>Pipeline health</Label>
-        <Value>{successRate}</Value>
-        <Subtle>
-          {jobSnapshot.running} running • {jobSnapshot.queued} queued • {jobSnapshot.failedToday} failed today
-        </Subtle>
-      </Tile>
-      <Tile>
-        <Label>Throughput / hr</Label>
-        <Value>{jobSnapshot.throughputPerHour.toFixed(1)}</Value>
-        <Subtle>
-          Avg pipeline {formatDuration(jobSnapshot.avgPipelineSeconds)} •{' '}
-          {health.outOfOrder ? 'attention required' : 'systems nominal'}
-        </Subtle>
-      </Tile>
+    <Grid container spacing={1.5}>
+      <Grid item xs={12} sm={6} md={4} lg={2.4}>
+        <Card sx={{ padding: { xs: 1.5, sm: 1.75, md: 2 }, display: 'grid', gap: 0.5 }}>
+          <Typography variant="caption" sx={{ letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+            Decks managed
+          </Typography>
+          <Typography variant="h5" component="span" sx={{ fontSize: '1.5rem', fontWeight: 600 }}>
+            {deckCount}
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>
+            {completedCount} complete • {inFlightCount} in-flight
+          </Typography>
+        </Card>
+      </Grid>
+      <Grid item xs={12} sm={6} md={4} lg={2.4}>
+        <Card sx={{ padding: { xs: 1.5, sm: 1.75, md: 2 }, display: 'grid', gap: 0.5 }}>
+          <Typography variant="caption" sx={{ letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+            Total slides processed
+          </Typography>
+          <Typography variant="h5" component="span" sx={{ fontSize: '1.5rem', fontWeight: 600 }}>
+            {slideCount}
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>
+            Across {deckCount} decks
+          </Typography>
+        </Card>
+      </Grid>
+      <Grid item xs={12} sm={6} md={4} lg={2.4}>
+        <Card sx={{ padding: { xs: 1.5, sm: 1.75, md: 2 }, display: 'grid', gap: 0.5 }}>
+          <Typography variant="caption" sx={{ letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+            Runtime delivered
+          </Typography>
+          <Typography variant="h5" component="span" sx={{ fontSize: '1.5rem', fontWeight: 600 }}>
+            {formatDuration(deliveredSeconds)}
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>
+            Final MP4 outputs
+          </Typography>
+        </Card>
+      </Grid>
+      <Grid item xs={12} sm={6} md={4} lg={2.4}>
+        <Card sx={{ padding: { xs: 1.5, sm: 1.75, md: 2 }, display: 'grid', gap: 0.5 }}>
+          <Typography variant="caption" sx={{ letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+            Pipeline health
+          </Typography>
+          <Typography variant="h5" component="span" sx={{ fontSize: '1.5rem', fontWeight: 600 }}>
+            {successRate}
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>
+            {jobSnapshot.running} running • {jobSnapshot.queued} queued • {jobSnapshot.failedToday} failed today
+          </Typography>
+        </Card>
+      </Grid>
+      <Grid item xs={12} sm={6} md={4} lg={2.4}>
+        <Card sx={{ padding: { xs: 1.5, sm: 1.75, md: 2 }, display: 'grid', gap: 0.5 }}>
+          <Typography variant="caption" sx={{ letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+            Throughput / hr
+          </Typography>
+          <Typography variant="h5" component="span" sx={{ fontSize: '1.5rem', fontWeight: 600 }}>
+            {jobSnapshot.throughputPerHour.toFixed(1)}
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>
+            Avg pipeline {formatDuration(jobSnapshot.avgPipelineSeconds)} •{' '}
+            {health.outOfOrder ? 'attention required' : 'systems nominal'}
+          </Typography>
+        </Card>
+      </Grid>
     </Grid>
   );
 }

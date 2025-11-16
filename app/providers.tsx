@@ -1,15 +1,21 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { ThemeProvider } from 'styled-components';
+import { ThemeProvider as StyledThemeProvider } from 'styled-components';
+import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import { GlobalStyle, theme } from '@/theme';
+import { muiTheme } from '@/theme/mui-theme';
 
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
-    <ThemeProvider theme={theme}>
-      <GlobalStyle />
-      {children}
-    </ThemeProvider>
+    <MuiThemeProvider theme={muiTheme}>
+      <CssBaseline />
+      <StyledThemeProvider theme={theme}>
+        <GlobalStyle />
+        {children}
+      </StyledThemeProvider>
+    </MuiThemeProvider>
   );
 }
 

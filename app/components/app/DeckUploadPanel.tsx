@@ -2,126 +2,22 @@
 
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
-import styled from 'styled-components';
-
-const Panel = styled.div`
-  background: ${({ theme }) => theme.colors.surfaceStrong};
-  border-radius: ${({ theme }) => theme.radius.lg};
-  padding: clamp(2rem, 3vw, 2.6rem);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  box-shadow: ${({ theme }) => theme.shadows.soft};
-  display: grid;
-  gap: 1.6rem;
-`;
-
-const DropZone = styled.label<{ $dragging: boolean }>`
-  border: 1px dashed rgba(255, 255, 255, 0.18);
-  border-radius: ${({ theme }) => theme.radius.md};
-  padding: clamp(1.8rem, 3vw, 2.4rem);
-  display: grid;
-  place-items: center;
-  gap: 0.6rem;
-  text-align: center;
-  cursor: pointer;
-  transition: border-color 0.25s ease, background 0.25s ease;
-  background: ${({ $dragging }) => ($dragging ? 'rgba(140, 92, 255, 0.12)' : 'rgba(21, 18, 42, 0.6)')};
-
-  &:hover {
-    border-color: rgba(140, 92, 255, 0.6);
-  }
-`;
-
-const BadgeRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  justify-content: center;
-`;
-
-const Badge = styled.span`
-  background: rgba(36, 228, 206, 0.14);
-  color: #8affea;
-  padding: 0.35rem 0.7rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-`;
-
-const Button = styled.button`
-  background: linear-gradient(135deg, rgba(140, 92, 255, 0.95), rgba(36, 228, 206, 0.95));
-  border: none;
-  color: #0b0416;
-  font-weight: 600;
-  padding: 0.75rem 1.6rem;
-  border-radius: ${({ theme }) => theme.radius.sm};
-  cursor: pointer;
-  font-size: 0.95rem;
-  transition: transform 0.2s ease;
-
-  &:hover {
-    transform: translateY(-1px);
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-  }
-`;
-
-const Details = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.5rem;
-  justify-content: space-between;
-  font-size: 0.9rem;
-  color: ${({ theme }) => theme.colors.muted};
-`;
-
-const HiddenInput = styled.input`
-  display: none;
-`;
-
-const ConfigGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-`;
-
-const Control = styled.label`
-  display: grid;
-  gap: 0.35rem;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: rgba(213, 210, 255, 0.7);
-`;
-
-const Select = styled.select`
-  padding: 0.55rem 0.75rem;
-  border-radius: ${({ theme }) => theme.radius.sm};
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(12, 10, 28, 0.85);
-  color: ${({ theme }) => theme.colors.text};
-`;
-
-const WarningNotice = styled.div`
-  border-radius: ${({ theme }) => theme.radius.md};
-  border: 1px solid rgba(255, 196, 88, 0.45);
-  background: rgba(255, 196, 88, 0.08);
-  padding: 1rem;
-  display: grid;
-  gap: 0.5rem;
-  color: #ffd18a;
-  font-size: 0.9rem;
-`;
-
-const WarningList = styled.ul`
-  margin: 0;
-  padding-left: 1.2rem;
-  display: grid;
-  gap: 0.35rem;
-`;
+import {
+  Box,
+  Typography,
+  Button,
+  Grid,
+  Chip,
+  Alert,
+  AlertTitle,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Stack,
+} from '@mui/material';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import { Card } from '@/app/components/ui/Card';
 
 interface VoiceOption {
   id: string;
@@ -216,67 +112,89 @@ export function DeckUploadPanel({ limits, disabled }: DeckUploadPanelProps) {
   };
 
   return (
-    <Panel>
-      <div>
-        <h2 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 0.6rem', fontSize: '1.6rem' }}>Upload new decks</h2>
-        <p style={{ margin: 0, color: 'rgba(213, 210, 255, 0.76)' }}>
-          Drop PPTX, PDF, or Google Slides exports. We will parse slides, generate scripts, and queue narration jobs instantly.
-        </p>
-      </div>
-      <ConfigGrid>
-        <Control>
-          Processing mode
-          <Select
-            value={processingMode}
-            onChange={(event) => setProcessingMode(event.target.value as Limits['defaultMode'])}
-            disabled={disabled || uploading}
-          >
-            <option value="REVIEW">Review first</option>
-            <option value="ONE_SHOT">One-shot automation</option>
-          </Select>
-        </Control>
-        <Control>
-          Script model
-          <Select
-            value={scriptModel}
-            onChange={(event) => setScriptModel(event.target.value)}
-            disabled={disabled || uploading}
-          >
-            {scriptModelOptions.map((model) => (
-              <option key={model} value={model}>
-                {model}
-              </option>
-            ))}
-          </Select>
-        </Control>
-        <Control>
-          TTS model
-          <Select value={ttsModel} onChange={(event) => setTtsModel(event.target.value)} disabled={disabled || uploading}>
-            {ttsModelOptions.map((model) => (
-              <option key={model} value={model}>
-                {model}
-              </option>
-            ))}
-          </Select>
-        </Control>
-        <Control>
-          Voice
-          <Select
-            value={voiceId}
-            onChange={(event) => setVoiceId(event.target.value)}
-            disabled={disabled || uploading || voiceOptions.length === 0}
-          >
-            {voiceOptions.length === 0 && <option value="">No voices available</option>}
-            {voiceOptions.map((voice) => (
-              <option key={voice.id} value={voice.id}>
-                {voice.name}
-              </option>
-            ))}
-          </Select>
-        </Control>
-      </ConfigGrid>
-      <DropZone
-        $dragging={dragging}
+    <Card sx={{ padding: { xs: 2, sm: 2.5, md: 3 }, display: 'grid', gap: 2 }}>
+      <Box>
+        <Typography variant="h4" component="h2" sx={{ fontFamily: 'var(--font-serif)', mb: 0.75 }}>
+          Upload new decks
+        </Typography>
+        <Typography variant="body2" sx={{ color: 'rgba(213, 210, 255, 0.76)' }}>
+          Drop PPTX, PDF, or Google Slides exports. We will parse slides, generate scripts, and queue narration jobs
+          instantly.
+        </Typography>
+      </Box>
+
+      <Grid container spacing={1.5}>
+        <Grid item xs={12} sm={6} md={3}>
+          <FormControl fullWidth variant="outlined" size="small">
+            <InputLabel>Processing mode</InputLabel>
+            <Select
+              value={processingMode}
+              onChange={(event) => setProcessingMode(event.target.value as Limits['defaultMode'])}
+              disabled={disabled || uploading}
+              label="Processing mode"
+            >
+              <MenuItem value="REVIEW">Review first</MenuItem>
+              <MenuItem value="ONE_SHOT">One-shot automation</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <FormControl fullWidth variant="outlined" size="small">
+            <InputLabel>Script model</InputLabel>
+            <Select
+              value={scriptModel}
+              onChange={(event) => setScriptModel(event.target.value)}
+              disabled={disabled || uploading}
+              label="Script model"
+            >
+              {scriptModelOptions.map((model) => (
+                <MenuItem key={model} value={model}>
+                  {model}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <FormControl fullWidth variant="outlined" size="small">
+            <InputLabel>TTS model</InputLabel>
+            <Select
+              value={ttsModel}
+              onChange={(event) => setTtsModel(event.target.value)}
+              disabled={disabled || uploading}
+              label="TTS model"
+            >
+              {ttsModelOptions.map((model) => (
+                <MenuItem key={model} value={model}>
+                  {model}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <FormControl fullWidth variant="outlined" size="small">
+            <InputLabel>Voice</InputLabel>
+            <Select
+              value={voiceId}
+              onChange={(event) => setVoiceId(event.target.value)}
+              disabled={disabled || uploading || voiceOptions.length === 0}
+              label="Voice"
+            >
+              {voiceOptions.length === 0 && <MenuItem value="">No voices available</MenuItem>}
+              {voiceOptions.map((voice) => (
+                <MenuItem key={voice.id} value={voice.id}>
+                  {voice.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+      </Grid>
+
+      <Box
+        component="label"
+        htmlFor="deck-upload-input"
         onDragEnter={(event) => {
           event.preventDefault();
           setDragging(true);
@@ -293,25 +211,54 @@ export function DeckUploadPanel({ limits, disabled }: DeckUploadPanelProps) {
           setDragging(false);
           handleFiles(event.dataTransfer.files);
         }}
+        sx={{
+          border: '1px dashed',
+          borderColor: dragging ? 'primary.main' : 'rgba(255, 255, 255, 0.18)',
+          borderRadius: 2,
+          padding: { xs: 2, sm: 2.5, md: 3 },
+          display: 'grid',
+          placeItems: 'center',
+          gap: 1.5,
+          textAlign: 'center',
+          cursor: disabled || uploading ? 'not-allowed' : 'pointer',
+          transition: 'border-color 0.25s ease, background 0.25s ease',
+          background: dragging ? 'rgba(140, 92, 255, 0.12)' : 'rgba(21, 18, 42, 0.6)',
+          '&:hover': {
+            borderColor: disabled || uploading ? 'rgba(255, 255, 255, 0.18)' : 'rgba(140, 92, 255, 0.6)',
+          },
+        }}
       >
-        <BadgeRow>
-          <Badge>pptx</Badge>
-          <Badge>pdf</Badge>
-          <Badge>speaker notes</Badge>
-          <Badge>background jobs</Badge>
-        </BadgeRow>
-        <div style={{ fontSize: '1.05rem', fontWeight: 600 }}>Drag files here or browse</div>
+        <Stack direction="row" spacing={0.75} flexWrap="wrap" justifyContent="center">
+          <Chip label="pptx" size="small" sx={{ backgroundColor: 'rgba(36, 228, 206, 0.14)', color: '#8affea' }} />
+          <Chip label="pdf" size="small" sx={{ backgroundColor: 'rgba(36, 228, 206, 0.14)', color: '#8affea' }} />
+          <Chip
+            label="speaker notes"
+            size="small"
+            sx={{ backgroundColor: 'rgba(36, 228, 206, 0.14)', color: '#8affea' }}
+          />
+          <Chip
+            label="background jobs"
+            size="small"
+            sx={{ backgroundColor: 'rgba(36, 228, 206, 0.14)', color: '#8affea' }}
+          />
+        </Stack>
+        <Typography variant="h6" sx={{ fontSize: '1.05rem', fontWeight: 600 }}>
+          Drag files here or browse
+        </Typography>
         <Button
-          type="button"
+          variant="contained"
+          component="span"
           disabled={disabled || uploading}
           onClick={(event) => {
             event.preventDefault();
             inputRef.current?.click();
           }}
+          startIcon={<CloudUploadIcon />}
         >
           {disabled ? 'Generation paused' : uploading ? 'Uploading…' : 'Select files'}
         </Button>
-        <HiddenInput
+        <input
+          id="deck-upload-input"
           type="file"
           multiple
           ref={inputRef}
@@ -319,27 +266,45 @@ export function DeckUploadPanel({ limits, disabled }: DeckUploadPanelProps) {
             handleFiles(event.target.files);
             event.target.value = '';
           }}
+          style={{ display: 'none' }}
         />
-      </DropZone>
+      </Box>
+
       {warnings.length > 0 && (
-        <WarningNotice>
-          <strong>Heads up:</strong>
-          <WarningList>
+        <Alert severity="warning" sx={{ mt: 1 }}>
+          <AlertTitle>Heads up</AlertTitle>
+          <Box component="ul" sx={{ margin: 0, paddingLeft: 2.5, display: 'grid', gap: 0.5 }}>
             {warnings.map((warning, index) => (
-              <li key={`upload-warning-${index}`}>{warning}</li>
+              <Typography key={`upload-warning-${index}`} component="li" variant="body2">
+                {warning}
+              </Typography>
             ))}
-          </WarningList>
-        </WarningNotice>
+          </Box>
+        </Alert>
       )}
-      <Details>
-        <span>
+
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 1.5,
+          justifyContent: 'space-between',
+          fontSize: '0.9rem',
+          color: 'text.secondary',
+        }}
+      >
+        <Typography variant="body2" component="span">
           Soft limits: <strong>{limits.maxSlides} slides</strong> • <strong>{limits.maxFileSizeMB} MB</strong> per file
-        </span>
-        <span>Mode: {processingMode === 'REVIEW' ? 'Review first' : 'One-shot automation'}</span>
-        <span>Script model: {scriptModel}</span>
-        <span>TTS model: {ttsModel}</span>
-        <span>Voice: {voiceOptions.find((voice) => voice.id === voiceId)?.name ?? 'Not set'}</span>
-      </Details>
-    </Panel>
+        </Typography>
+        <Typography variant="body2" component="span">
+          Mode: {processingMode === 'REVIEW' ? 'Review first' : 'One-shot automation'}
+        </Typography>
+        <Typography variant="body2" component="span">Script model: {scriptModel}</Typography>
+        <Typography variant="body2" component="span">TTS model: {ttsModel}</Typography>
+        <Typography variant="body2" component="span">
+          Voice: {voiceOptions.find((voice) => voice.id === voiceId)?.name ?? 'Not set'}
+        </Typography>
+      </Box>
+    </Card>
   );
 }

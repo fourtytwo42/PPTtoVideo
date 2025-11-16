@@ -1,116 +1,10 @@
 'use client';
 
-import styled from 'styled-components';
+import { Box, Typography, Stack, Chip, LinearProgress } from '@mui/material';
 import { formatRelativeTime } from '@/lib/format';
 import type { DashboardJob } from '@/app/hooks/useDashboardProgress';
-
-const Panel = styled.div`
-  background: ${({ theme }) => theme.colors.surfaceStrong};
-  border-radius: ${({ theme }) => theme.radius.lg};
-  padding: clamp(1.6rem, 3vw, 2.2rem);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  display: grid;
-  gap: 1rem;
-`;
-
-const Header = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.8rem;
-`;
-
-const SyncBadge = styled.span<{ $state: 'syncing' | 'idle' }>`
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: ${({ $state }) => ($state === 'syncing' ? '#CBB3FF' : 'rgba(213, 210, 255, 0.68)')};
-`;
-
-const List = styled.div`
-  display: grid;
-  gap: 0.8rem;
-`;
-
-const JobCard = styled.div`
-  border-radius: ${({ theme }) => theme.radius.md};
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 0.9rem 1rem;
-  display: grid;
-  gap: 0.4rem;
-  background: rgba(25, 20, 48, 0.75);
-`;
-
-const JobTitle = styled.div`
-  font-weight: 600;
-  display: flex;
-  justify-content: space-between;
-  gap: 0.8rem;
-  font-size: 0.92rem;
-`;
-
-const ProgressBar = styled.div`
-  height: 6px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  overflow: hidden;
-`;
-
-const ProgressFill = styled.div<{ $progress: number }>`
-  height: 100%;
-  width: ${({ $progress }) => Math.round($progress * 100)}%;
-  background: linear-gradient(135deg, rgba(140, 92, 255, 0.95), rgba(36, 228, 206, 0.95));
-  transition: width 0.4s ease;
-`;
-
-const Meta = styled.div`
-  font-size: 0.8rem;
-  color: ${({ theme }) => theme.colors.muted};
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-`;
-
-const StatusPill = styled.span<{ $variant: 'queued' | 'running' | 'failed' | 'succeeded' }>`
-  padding: 0.25rem 0.6rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  background: ${({ $variant }) =>
-    $variant === 'succeeded'
-      ? 'rgba(36, 228, 206, 0.18)'
-      : $variant === 'failed'
-      ? 'rgba(255, 111, 145, 0.18)'
-      : $variant === 'running'
-      ? 'rgba(140, 92, 255, 0.18)'
-      : 'rgba(255, 196, 88, 0.16)'};
-  color: ${({ $variant }) =>
-    $variant === 'succeeded'
-      ? '#8AFFEA'
-      : $variant === 'failed'
-      ? '#FF9BB4'
-      : $variant === 'running'
-      ? '#CBB3FF'
-      : '#FFD18A'};
-`;
-
-const ClearButton = styled.button`
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: transparent;
-  color: rgba(255, 255, 255, 0.85);
-  padding: 0.4rem 0.9rem;
-  border-radius: ${({ theme }) => theme.radius.sm};
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: opacity 0.2s ease;
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-`;
+import { Card } from '@/app/components/ui/Card';
+import { Button } from '@/app/components/ui/Button';
 
 interface JobActivityPanelProps {
   jobs: DashboardJob[];
@@ -119,11 +13,25 @@ interface JobActivityPanelProps {
   clearing?: boolean;
 }
 
-const statusVariant = (status: string): 'queued' | 'running' | 'failed' | 'succeeded' => {
-  if (status === 'RUNNING') return 'running';
-  if (status === 'FAILED') return 'failed';
-  if (status === 'SUCCEEDED') return 'succeeded';
-  return 'queued';
+const statusVariant = (status: string): 'default' | 'primary' | 'success' | 'error' => {
+  if (status === 'RUNNING') return 'primary';
+  if (status === 'FAILED') return 'error';
+  if (status === 'SUCCEEDED') return 'success';
+  return 'default';
+};
+
+const statusColor = (status: string): string => {
+  if (status === 'SUCCEEDED') return '#8AFFEA';
+  if (status === 'FAILED') return '#FF9BB4';
+  if (status === 'RUNNING') return '#CBB3FF';
+  return '#FFD18A';
+};
+
+const statusBgColor = (status: string): string => {
+  if (status === 'SUCCEEDED') return 'rgba(36, 228, 206, 0.18)';
+  if (status === 'FAILED') return 'rgba(255, 111, 145, 0.18)';
+  if (status === 'RUNNING') return 'rgba(140, 92, 255, 0.18)';
+  return 'rgba(255, 196, 88, 0.16)';
 };
 
 const progressForStatus = (job: DashboardJob) => {
@@ -134,47 +42,101 @@ const progressForStatus = (job: DashboardJob) => {
 
 export function JobActivityPanel({ jobs, syncing, onClear, clearing }: JobActivityPanelProps) {
   return (
-    <Panel>
-      <Header>
-        <div>
-          <h3 style={{ fontFamily: 'var(--font-serif)', margin: 0 }}>Job activity</h3>
-          <p style={{ margin: 0, color: 'rgba(213, 210, 255, 0.7)', fontSize: '0.9rem' }}>
+    <Card sx={{ padding: { xs: 2, sm: 2.5, md: 2.75 }, display: 'grid', gap: 1.25 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+        <Box>
+          <Typography variant="h5" component="h3" sx={{ fontFamily: 'var(--font-serif)', margin: 0, mb: 0.5 }}>
+            Job activity
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'rgba(213, 210, 255, 0.7)' }}>
             Track queued, running, and recently completed jobs across your decks.
-          </p>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <SyncBadge $state={syncing ? 'syncing' : 'idle'}>{syncing ? 'Syncing…' : 'Live'}</SyncBadge>
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+          <Chip
+            label={syncing ? 'Syncing…' : 'Live'}
+            size="small"
+            sx={{
+              fontSize: '0.75rem',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              backgroundColor: syncing ? 'rgba(140, 92, 255, 0.18)' : 'transparent',
+              color: syncing ? '#CBB3FF' : 'rgba(213, 210, 255, 0.68)',
+            }}
+          />
           {onClear && (
-            <ClearButton onClick={onClear} disabled={clearing}>
+            <Button variant="outlined" size="small" onClick={onClear} disabled={clearing}>
               {clearing ? 'Clearing…' : 'Clear history'}
-            </ClearButton>
+            </Button>
           )}
-        </div>
-      </Header>
-      <List>
+        </Box>
+      </Box>
+      <Stack spacing={1}>
         {jobs.length === 0 && (
-          <p style={{ margin: 0, color: 'rgba(213,210,255,0.6)' }}>No jobs scheduled in the last 24 hours.</p>
+          <Typography variant="body2" sx={{ color: 'rgba(213,210,255,0.6)' }}>
+            No jobs scheduled in the last 24 hours.
+          </Typography>
         )}
         {jobs.map((job) => (
-          <JobCard key={job.id}>
-            <JobTitle>
-              <span>{job.deckTitle}</span>
-              <StatusPill $variant={statusVariant(job.status)}>{job.status.toLowerCase()}</StatusPill>
-            </JobTitle>
-            <span style={{ fontSize: '0.85rem', color: 'rgba(213,210,255,0.8)' }}>
+          <Box
+            key={job.id}
+            sx={{
+              borderRadius: 2,
+              border: '1px solid rgba(255, 255, 255, 0.06)',
+              padding: '0.9rem 1rem',
+              display: 'grid',
+              gap: 0.5,
+              background: 'rgba(25, 20, 48, 0.75)',
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, alignItems: 'center' }}>
+              <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.92rem' }}>
+                {job.deckTitle}
+              </Typography>
+              <Chip
+                label={job.status.toLowerCase()}
+                size="small"
+                sx={{
+                  fontSize: '0.75rem',
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  backgroundColor: statusBgColor(job.status),
+                  color: statusColor(job.status),
+                }}
+              />
+            </Box>
+            <Typography variant="body2" sx={{ fontSize: '0.85rem', color: 'rgba(213,210,255,0.8)' }}>
               {job.type.split('_').map((word) => word.charAt(0) + word.slice(1).toLowerCase()).join(' ')}
-            </span>
-            <ProgressBar>
-              <ProgressFill $progress={progressForStatus(job)} />
-            </ProgressBar>
-            <Meta>
-              <span>{formatRelativeTime(new Date(job.updatedAt).getTime())}</span>
-              <span>{Math.round(progressForStatus(job) * 100)}%</span>
-            </Meta>
-          </JobCard>
+            </Typography>
+            <LinearProgress
+              variant="determinate"
+              value={progressForStatus(job) * 100}
+              sx={{
+                height: 6,
+                borderRadius: '999px',
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                '& .MuiLinearProgress-bar': {
+                  background: 'linear-gradient(135deg, rgba(140, 92, 255, 0.95), rgba(36, 228, 206, 0.95))',
+                  borderRadius: '999px',
+                },
+              }}
+            />
+            <Box
+              sx={{
+                fontSize: '0.8rem',
+                color: 'text.secondary',
+                display: 'flex',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 0.75,
+              }}
+            >
+              <Typography variant="caption">{formatRelativeTime(new Date(job.updatedAt).getTime())}</Typography>
+              <Typography variant="caption">{Math.round(progressForStatus(job) * 100)}%</Typography>
+            </Box>
+          </Box>
         ))}
-      </List>
-    </Panel>
+      </Stack>
+    </Card>
   );
 }
-

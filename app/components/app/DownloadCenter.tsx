@@ -1,47 +1,10 @@
 'use client';
 
-import styled from 'styled-components';
+import { Box, Typography, Stack, Button } from '@mui/material';
+import Link from 'next/link';
 import type { DeckSummary } from '@/lib/decks';
 import { formatDuration, formatRelativeTime } from '@/lib/format';
-
-const Panel = styled.div`
-  background: ${({ theme }) => theme.colors.surfaceStrong};
-  border-radius: ${({ theme }) => theme.radius.lg};
-  padding: clamp(1.6rem, 3vw, 2.2rem);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  display: grid;
-  gap: 1rem;
-`;
-
-const List = styled.div`
-  display: grid;
-  gap: 0.8rem;
-`;
-
-const Row = styled.div`
-  border-radius: ${({ theme }) => theme.radius.md};
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(21, 18, 42, 0.7);
-  padding: 0.9rem 1rem;
-  display: grid;
-  gap: 0.35rem;
-`;
-
-const Actions = styled.div`
-  display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-`;
-
-const DownloadButton = styled.a`
-  padding: 0.4rem 0.85rem;
-  border-radius: ${({ theme }) => theme.radius.sm};
-  font-size: 0.85rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  border: 1px solid rgba(140, 92, 255, 0.45);
-  color: #cbb3ff;
-`;
+import { Card } from '@/app/components/ui/Card';
 
 interface DownloadCenterProps {
   decks: DeckSummary[];
@@ -57,35 +20,77 @@ export function DownloadCenter({ decks }: DownloadCenterProps) {
     .slice(0, 6);
 
   return (
-    <Panel>
-      <div>
-        <h3 style={{ fontFamily: 'var(--font-serif)', margin: 0 }}>Downloads</h3>
-        <p style={{ margin: 0, color: 'rgba(213, 210, 255, 0.7)', fontSize: '0.9rem' }}>
-          Grab final renders without leaving the dashboard. Recent MP4 builds appear here as soon as assembly completes.
-        </p>
-      </div>
-      <List>
+    <Card sx={{ padding: { xs: 2, sm: 2.5, md: 2.75 }, display: 'grid', gap: 1.25 }}>
+      <Box>
+        <Typography variant="h5" component="h3" sx={{ fontFamily: 'var(--font-serif)', margin: 0, mb: 0.5 }}>
+          Downloads
+        </Typography>
+        <Typography variant="body2" sx={{ color: 'rgba(213, 210, 255, 0.7)' }}>
+          Grab final renders without leaving the dashboard. Recent MP4 builds appear here as soon as assembly
+          completes.
+        </Typography>
+      </Box>
+      <Stack spacing={1}>
         {readyDecks.length === 0 && (
-          <p style={{ margin: 0, color: 'rgba(213,210,255,0.6)' }}>No final renders yet. Finish assembling to see downloads.</p>
+          <Typography variant="body2" sx={{ color: 'rgba(213,210,255,0.6)' }}>
+            No final renders yet. Finish assembling to see downloads.
+          </Typography>
         )}
         {readyDecks.map((deck) => (
-          <Row key={deck.id}>
-            <strong>{deck.title}</strong>
-            <span style={{ fontSize: '0.85rem', color: 'rgba(213,210,255,0.8)' }}>
+          <Box
+            key={deck.id}
+            sx={{
+              borderRadius: 2,
+              border: '1px solid rgba(255, 255, 255, 0.05)',
+              background: 'rgba(21, 18, 42, 0.7)',
+              padding: '0.9rem 1rem',
+              display: 'grid',
+              gap: 0.5,
+            }}
+          >
+            <Typography variant="body2" component="strong" sx={{ fontWeight: 600 }}>
+              {deck.title}
+            </Typography>
+            <Typography variant="body2" sx={{ fontSize: '0.85rem', color: 'rgba(213,210,255,0.8)' }}>
               {formatDuration(deck.runtimeSeconds)} • {formatRelativeTime(new Date(deck.createdAt).getTime())}
-            </span>
-            <Actions>
-              <DownloadButton href={`/api/decks/${deck.id}/final`} target="_blank" rel="noreferrer">
+            </Typography>
+            <Stack direction="row" spacing={0.75} flexWrap="wrap">
+              <Button
+                component="a"
+                href={`/api/decks/${deck.id}/final`}
+                target="_blank"
+                rel="noreferrer"
+                variant="outlined"
+                size="small"
+                sx={{
+                  fontSize: '0.85rem',
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  borderColor: 'rgba(140, 92, 255, 0.45)',
+                  color: '#cbb3ff',
+                }}
+              >
                 Download MP4
-              </DownloadButton>
-              <DownloadButton href={`/deck/${deck.id}`}>
+              </Button>
+              <Button
+                component={Link}
+                href={`/deck/${deck.id}`}
+                variant="outlined"
+                size="small"
+                sx={{
+                  fontSize: '0.85rem',
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  borderColor: 'rgba(140, 92, 255, 0.45)',
+                  color: '#cbb3ff',
+                }}
+              >
                 Open workspace
-              </DownloadButton>
-            </Actions>
-          </Row>
+              </Button>
+            </Stack>
+          </Box>
         ))}
-      </List>
-    </Panel>
+      </Stack>
+    </Card>
   );
 }
-

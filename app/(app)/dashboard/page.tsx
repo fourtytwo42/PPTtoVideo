@@ -1,27 +1,10 @@
-import type { CSSProperties } from 'react';
 import { DashboardRealtime } from '@/app/components/app/DashboardRealtime';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { buildDeckSummary } from '@/lib/decks';
-
-const pageHeaderStyle: CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '0.75rem',
-};
-
-const headlineStyle: CSSProperties = {
-  fontFamily: 'var(--font-serif)',
-  fontSize: 'clamp(2rem, 4vw, 2.6rem)',
-  margin: 0,
-};
-
-const leadStyle: CSSProperties = {
-  margin: 0,
-  color: 'rgba(213, 210, 255, 0.76)',
-  maxWidth: '48rem',
-};
+import { PageHeader } from '@/app/components/ui/PageHeader';
+import { Box } from '@mui/material';
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -158,14 +141,11 @@ export default async function DashboardPage() {
   }));
 
   return (
-    <section style={{ display: 'grid', gap: '2.4rem' }}>
-      <div style={pageHeaderStyle}>
-        <h1 style={headlineStyle}>Operations dashboard</h1>
-        <p style={leadStyle}>
-          Monitor deck ingestion, tune AI narration, and orchestrate high-fidelity video renders without babysitting progress
-          bars.
-        </p>
-      </div>
+    <Box component="section" sx={{ display: 'grid', gap: 3 }}>
+      <PageHeader
+        title="Operations dashboard"
+        subtitle="Monitor deck ingestion, tune AI narration, and orchestrate high-fidelity video renders without babysitting progress bars."
+      />
       <DashboardRealtime
         limits={limits}
         notifications={notificationPayload}
@@ -173,6 +153,6 @@ export default async function DashboardPage() {
         initialJobs={jobSnapshots}
         initialHealth={health}
       />
-    </section>
+    </Box>
   );
 }

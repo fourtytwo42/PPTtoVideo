@@ -1,194 +1,30 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import styled from 'styled-components';
+import {
+  Box,
+  Typography,
+  Grid,
+  TextField,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Chip,
+  Alert,
+  AlertTitle,
+  Stack,
+  CircularProgress,
+  Link as MuiLink,
+} from '@mui/material';
 import { formatRelativeTime } from '@/lib/format';
-
-const Page = styled.section`
-  display: grid;
-  gap: 2.2rem;
-`;
-
-const Section = styled.section`
-  background: rgba(21, 18, 42, 0.72);
-  border-radius: ${({ theme }) => theme.radius.lg};
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  padding: clamp(1.6rem, 2.4vw, 2.2rem);
-  display: grid;
-  gap: 1.4rem;
-`;
-
-const SectionTitle = styled.h2`
-  margin: 0;
-  font-size: 1.4rem;
-`;
-
-const FieldGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.2rem;
-`;
-
-const Field = styled.label`
-  display: grid;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(213, 210, 255, 0.76);
-`;
-
-const Input = styled.input`
-  padding: 0.6rem 0.75rem;
-  border-radius: ${({ theme }) => theme.radius.sm};
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(0, 0, 0, 0.35);
-  color: ${({ theme }) => theme.colors.text};
-`;
-
-const Select = styled.select`
-  padding: 0.6rem 0.75rem;
-  border-radius: ${({ theme }) => theme.radius.sm};
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(0, 0, 0, 0.35);
-  color: ${({ theme }) => theme.colors.text};
-`;
-
-const TextArea = styled.textarea`
-  padding: 0.6rem 0.75rem;
-  border-radius: ${({ theme }) => theme.radius.sm};
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(0, 0, 0, 0.35);
-  color: ${({ theme }) => theme.colors.text};
-  min-height: 120px;
-`;
-
-const Button = styled.button`
-  padding: 0.65rem 1.2rem;
-  border-radius: ${({ theme }) => theme.radius.sm};
-  border: none;
-  background: linear-gradient(135deg, rgba(140, 92, 255, 0.95), rgba(36, 228, 206, 0.95));
-  color: #0b0416;
-  cursor: pointer;
-  font-weight: 600;
-  width: fit-content;
-  opacity: ${({ disabled }) => (disabled ? 0.6 : 1)};
-  pointer-events: ${({ disabled }) => (disabled ? 'none' : 'auto')};
-`;
-
-const OutlineButton = styled(Button)`
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  color: ${({ theme }) => theme.colors.text};
-`;
-
-const Table = styled.table`
-  width: 100%;
-  border-collapse: collapse;
-  color: rgba(213, 210, 255, 0.85);
-`;
-
-const Th = styled.th`
-  text-align: left;
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding-bottom: 0.6rem;
-  color: rgba(213, 210, 255, 0.7);
-`;
-
-const Td = styled.td`
-  padding: 0.5rem 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-`;
-
-const VoiceList = styled.ul`
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 0.4rem;
-`;
-
-const VoiceItem = styled.li`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.55rem 0.75rem;
-  border-radius: ${({ theme }) => theme.radius.sm};
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(12, 10, 28, 0.6);
-  font-size: 0.85rem;
-`;
-
-const VoiceMeta = styled.span`
-  color: rgba(213, 210, 255, 0.7);
-  font-size: 0.75rem;
-`;
-
-const AudioPreview = styled.audio`
-  width: 140px;
-  height: 32px;
-`;
-
-const HealthList = styled.div`
-  display: grid;
-  gap: 0.8rem;
-`;
-
-const HealthItem = styled.div<{ $status: 'ok' | 'warning' | 'error' }>`
-  border-radius: ${({ theme }) => theme.radius.md};
-  border: 1px solid
-    ${({ $status }) =>
-      $status === 'ok'
-        ? 'rgba(36, 228, 206, 0.45)'
-        : $status === 'warning'
-        ? 'rgba(255, 196, 88, 0.45)'
-        : 'rgba(255, 111, 145, 0.45)'};
-  background: rgba(15, 12, 32, 0.75);
-  padding: 0.85rem 1rem;
-  display: grid;
-  gap: 0.35rem;
-`;
-
-const HealthLabel = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  font-weight: 600;
-`;
-
-const StatusDot = styled.span<{ $status: 'ok' | 'warning' | 'error' }>`
-  display: inline-block;
-  width: 0.65rem;
-  height: 0.65rem;
-  border-radius: 50%;
-  background: ${({ $status }) =>
-    $status === 'ok' ? '#24E4CE' : $status === 'warning' ? '#FFC458' : '#FF6F91'};
-`;
-
-const HealthDetail = styled.span`
-  font-size: 0.85rem;
-  color: rgba(213, 210, 255, 0.75);
-`;
-
-const ActionList = styled.ul`
-  margin: 0;
-  padding-left: 1.2rem;
-  display: grid;
-  gap: 0.45rem;
-  color: rgba(213, 210, 255, 0.8);
-`;
-
-const ActionLink = styled.button`
-  background: none;
-  border: none;
-  color: #8c5cff;
-  cursor: pointer;
-  font-size: 0.85rem;
-  text-decoration: underline;
-  padding: 0;
-`;
+import { Card } from '@/app/components/ui/Card';
+import { PageHeader } from '@/app/components/ui/PageHeader';
+import { LoadingButton } from '@/app/components/ui/LoadingButton';
 
 interface UserSummary {
   id: string;
@@ -222,10 +58,7 @@ interface HealthCheck {
   detail?: string;
 }
 
-const actionHints: Record<
-  string,
-  { title: string; instruction: string; targetId?: string }
-> = {
+const actionHints: Record<string, { title: string; instruction: string; targetId?: string }> = {
   openai: {
     title: 'Configure OpenAI',
     instruction: 'Add your OpenAI API key and default model in the OpenAI configuration section.',
@@ -459,105 +292,150 @@ export default function AdminConsoleClient({ users, auditLogs }: AdminConsoleCli
     setSyncingVoices(false);
   };
 
-  return (
-    <Page>
-      <header style={{ display: 'grid', gap: '0.6rem' }}>
-        <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '2.3rem', margin: 0 }}>Admin console</h1>
-        <p style={{ margin: 0, color: 'rgba(213, 210, 255, 0.75)', maxWidth: '48rem' }}>
-          Configure default models, voice catalogs, access controls, and inspect audit history for DeckForge Studio.
-        </p>
-      </header>
+  const getHealthSeverity = (status: HealthCheck['status']): 'success' | 'warning' | 'error' => {
+    if (status === 'ok') return 'success';
+    if (status === 'warning') return 'warning';
+    return 'error';
+  };
 
-      <Section>
-        <SectionTitle>Platform health</SectionTitle>
-        <HealthList>
+  return (
+    <Box component="section" sx={{ display: 'grid', gap: 2.75 }}>
+      <PageHeader
+        title="Admin console"
+        subtitle="Configure default models, voice catalogs, access controls, and inspect audit history for DeckForge Studio."
+      />
+
+      <Card id="platform-health" sx={{ padding: { xs: 2, sm: 2.5, md: 2.75 }, display: 'grid', gap: 1.75 }}>
+        <Typography variant="h5" component="h2" sx={{ fontSize: '1.4rem', margin: 0 }}>
+          Platform health
+        </Typography>
+        <Stack spacing={1}>
           {healthChecks.length === 0 && !healthLoading && (
-            <HealthDetail>Diagnostics will appear once checks complete.</HealthDetail>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              Diagnostics will appear once checks complete.
+            </Typography>
           )}
           {healthChecks.map((check) => (
-            <HealthItem key={check.id} $status={check.status}>
-              <HealthLabel>
-                <StatusDot $status={check.status} />
-                {check.label}
-              </HealthLabel>
-              <HealthDetail>
-                {check.detail ??
-                  (check.status === 'ok'
-                    ? 'All good'
+            <Alert
+              key={check.id}
+              severity={getHealthSeverity(check.status)}
+              icon={
+                <Box
+                  sx={{
+                    width: '0.65rem',
+                    height: '0.65rem',
+                    borderRadius: '50%',
+                    background:
+                      check.status === 'ok' ? '#24E4CE' : check.status === 'warning' ? '#FFC458' : '#FF6F91',
+                  }}
+                />
+              }
+              sx={{
+                backgroundColor:
+                  check.status === 'ok'
+                    ? 'rgba(36, 228, 206, 0.14)'
                     : check.status === 'warning'
-                    ? 'Warning detected'
-                    : 'Requires attention')}
-              </HealthDetail>
-            </HealthItem>
+                    ? 'rgba(255, 196, 88, 0.14)'
+                    : 'rgba(255, 111, 145, 0.14)',
+                borderColor:
+                  check.status === 'ok'
+                    ? 'rgba(36, 228, 206, 0.45)'
+                    : check.status === 'warning'
+                    ? 'rgba(255, 196, 88, 0.45)'
+                    : 'rgba(255, 111, 145, 0.45)',
+              }}
+            >
+              <AlertTitle>{check.label}</AlertTitle>
+              {check.detail ??
+                (check.status === 'ok'
+                  ? 'All good'
+                  : check.status === 'warning'
+                  ? 'Warning detected'
+                  : 'Requires attention')}
+            </Alert>
           ))}
-        </HealthList>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '0.6rem',
-          }}
-        >
-          <OutlineButton type="button" onClick={refreshHealth} disabled={healthLoading}>
-            {healthLoading ? 'Checking…' : 'Run diagnostics'}
-          </OutlineButton>
-          <span style={{ fontSize: '0.8rem', color: 'rgba(213,210,255,0.65)' }}>
+        </Stack>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+          <LoadingButton variant="outlined" onClick={refreshHealth} loading={healthLoading}>
+            Run diagnostics
+          </LoadingButton>
+          <Typography variant="caption" sx={{ fontSize: '0.8rem', color: 'rgba(213,210,255,0.65)' }}>
             {healthError
               ? healthError
               : healthCheckedAt
               ? `Last checked ${new Date(healthCheckedAt).toLocaleTimeString()}`
               : 'Awaiting first check'}
-          </span>
-        </div>
+          </Typography>
+        </Box>
         {healthChecks.some((check) => check.status !== 'ok') && (
-          <div style={{ marginTop: '1rem' }}>
-            <h4 style={{ margin: '0 0 0.4rem' }}>Setup checklist</h4>
-            <ActionList>
+          <Box sx={{ mt: 1.5 }}>
+            <Typography variant="h6" component="h4" sx={{ margin: '0 0 0.5rem', fontSize: '1rem' }}>
+              Setup checklist
+            </Typography>
+            <Box component="ul" sx={{ margin: 0, paddingLeft: 2.5, display: 'grid', gap: 0.5 }}>
               {healthChecks
                 .filter((check) => check.status !== 'ok')
                 .map((check) => {
                   const hint = actionHints[check.id];
                   return (
-                    <li key={`action-${check.id}`}>
-                      <div style={{ fontWeight: 600 }}>{hint?.title ?? check.label}</div>
-                      <div>{hint?.instruction ?? check.detail ?? 'Review diagnostics above.'}</div>
+                    <Box key={`action-${check.id}`} component="li">
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {hint?.title ?? check.label}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                        {hint?.instruction ?? check.detail ?? 'Review diagnostics above.'}
+                      </Typography>
                       {hint?.targetId && (
-                        <ActionLink
+                        <MuiLink
+                          component="button"
                           type="button"
                           onClick={() => {
                             if (!hint?.targetId) return;
                             document.getElementById(hint.targetId)?.scrollIntoView({ behavior: 'smooth' });
                           }}
+                          sx={{
+                            fontSize: '0.85rem',
+                            textDecoration: 'underline',
+                            color: 'primary.main',
+                            cursor: 'pointer',
+                            border: 'none',
+                            background: 'none',
+                            padding: 0,
+                          }}
                         >
                           Jump to configuration
-                        </ActionLink>
+                        </MuiLink>
                       )}
-                    </li>
+                    </Box>
                   );
                 })}
-            </ActionList>
-          </div>
+            </Box>
+          </Box>
         )}
-      </Section>
+      </Card>
 
-      <Section id="openai-config">
-        <SectionTitle>OpenAI configuration</SectionTitle>
-        <FieldGrid>
-          <Field>
-            API key
-            <Input
+      <Card id="openai-config" sx={{ padding: { xs: 2, sm: 2.5, md: 2.75 }, display: 'grid', gap: 1.75 }}>
+        <Typography variant="h5" component="h2" sx={{ fontSize: '1.4rem', margin: 0 }}>
+          OpenAI configuration
+        </Typography>
+        <Grid container spacing={1.5}>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="API key"
               type="password"
+              fullWidth
               value={settings.openaiApiKey}
               onChange={(event) => setSettings((prev) => ({ ...prev, openaiApiKey: event.target.value }))}
+              size="small"
             />
-          </Field>
-          <Field>
-            Default model
-            <Input
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Default model"
+              fullWidth
               value={settings.defaultOpenAIModel}
               onChange={(event) => setSettings((prev) => ({ ...prev, defaultOpenAIModel: event.target.value }))}
+              size="small"
               list="openai-models"
             />
             <datalist id="openai-models">
@@ -569,37 +447,50 @@ export default function AdminConsoleClient({ users, auditLogs }: AdminConsoleCli
                   <option key={model} value={model} />
                 ))}
             </datalist>
-          </Field>
-        </FieldGrid>
-        <Field>
-          Allowed models (one per line)
-          <TextArea value={openAiAllowlistText} onChange={(event) => setOpenAiAllowlistText(event.target.value)} />
-        </Field>
-        <Field>
-          System prompt
-          <TextArea
-            value={settings.openaiSystemPrompt}
-            onChange={(event) => setSettings((prev) => ({ ...prev, openaiSystemPrompt: event.target.value }))}
-          />
-        </Field>
-      </Section>
+          </Grid>
+        </Grid>
+        <TextField
+          label="Allowed models (one per line)"
+          multiline
+          rows={4}
+          fullWidth
+          value={openAiAllowlistText}
+          onChange={(event) => setOpenAiAllowlistText(event.target.value)}
+          size="small"
+        />
+        <TextField
+          label="System prompt"
+          multiline
+          rows={4}
+          fullWidth
+          value={settings.openaiSystemPrompt}
+          onChange={(event) => setSettings((prev) => ({ ...prev, openaiSystemPrompt: event.target.value }))}
+          size="small"
+        />
+      </Card>
 
-      <Section id="elevenlabs-config">
-        <SectionTitle>ElevenLabs configuration</SectionTitle>
-        <FieldGrid>
-          <Field>
-            API key
-            <Input
+      <Card id="elevenlabs-config" sx={{ padding: { xs: 2, sm: 2.5, md: 2.75 }, display: 'grid', gap: 1.75 }}>
+        <Typography variant="h5" component="h2" sx={{ fontSize: '1.4rem', margin: 0 }}>
+          ElevenLabs configuration
+        </Typography>
+        <Grid container spacing={1.5}>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="API key"
               type="password"
+              fullWidth
               value={settings.elevenlabsApiKey}
               onChange={(event) => setSettings((prev) => ({ ...prev, elevenlabsApiKey: event.target.value }))}
+              size="small"
             />
-          </Field>
-          <Field>
-            Default TTS model
-            <Input
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Default TTS model"
+              fullWidth
               value={settings.defaultTTSModel}
               onChange={(event) => setSettings((prev) => ({ ...prev, defaultTTSModel: event.target.value }))}
+              size="small"
               list="tts-models"
             />
             <datalist id="tts-models">
@@ -611,154 +502,227 @@ export default function AdminConsoleClient({ users, auditLogs }: AdminConsoleCli
                   <option key={model} value={model} />
                 ))}
             </datalist>
-          </Field>
-        </FieldGrid>
-        <Field>
-          Allowed TTS models (one per line)
-          <TextArea value={ttsAllowlistText} onChange={(event) => setTtsAllowlistText(event.target.value)} />
-        </Field>
-        <Field>
-          Default voice
-          <Select
-            value={settings.defaultVoiceId}
-            onChange={(event) => {
-              const selected = voices.find((voice) => voice.id === event.target.value);
-              setSettings((prev) => ({
-                ...prev,
-                defaultVoiceId: event.target.value,
-                defaultVoiceLabel: selected?.name ?? prev.defaultVoiceLabel,
-              }));
-            }}
-          >
-            {voices.length === 0 && <option value="">No voices synced</option>}
-            {voices.map((voice) => (
-              <option key={voice.id} value={voice.id}>
-                {voice.name}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <OutlineButton type="button" onClick={syncVoices} disabled={syncingVoices || !settings.elevenlabsApiKey}>
-          {syncingVoices ? 'Syncing voices…' : 'Sync voices from ElevenLabs'}
-        </OutlineButton>
+          </Grid>
+        </Grid>
+        <TextField
+          label="Allowed TTS models (one per line)"
+          multiline
+          rows={4}
+          fullWidth
+          value={ttsAllowlistText}
+          onChange={(event) => setTtsAllowlistText(event.target.value)}
+          size="small"
+        />
+        <TextField
+          label="Default voice"
+          select
+          fullWidth
+          value={settings.defaultVoiceId}
+          onChange={(event) => {
+            const selected = voices.find((voice) => voice.id === event.target.value);
+            setSettings((prev) => ({
+              ...prev,
+              defaultVoiceId: event.target.value,
+              defaultVoiceLabel: selected?.name ?? prev.defaultVoiceLabel,
+            }));
+          }}
+          size="small"
+          SelectProps={{
+            native: true,
+          }}
+        >
+          {voices.length === 0 && <option value="">No voices synced</option>}
+          {voices.map((voice) => (
+            <option key={voice.id} value={voice.id}>
+              {voice.name}
+            </option>
+          ))}
+        </TextField>
+        <LoadingButton
+          variant="outlined"
+          onClick={syncVoices}
+          loading={syncingVoices}
+          disabled={!settings.elevenlabsApiKey}
+        >
+          Sync voices from ElevenLabs
+        </LoadingButton>
         {voices.length > 0 && (
-          <VoiceList>
+          <Stack spacing={0.5}>
             {voices.map((voice) => (
-              <VoiceItem key={voice.id}>
-                <div>
-                  <strong>{voice.name}</strong>
-                  {voice.category && <VoiceMeta> • {voice.category}</VoiceMeta>}
-                </div>
+              <Box
+                key={voice.id}
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '0.55rem 0.75rem',
+                  borderRadius: 1.5,
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  background: 'rgba(12, 10, 28, 0.6)',
+                }}
+              >
+                <Box>
+                  <Typography variant="body2" component="strong" sx={{ fontWeight: 600 }}>
+                    {voice.name}
+                  </Typography>
+                  {voice.category && (
+                    <Typography variant="caption" component="span" sx={{ color: 'text.secondary', ml: 0.5 }}>
+                      • {voice.category}
+                    </Typography>
+                  )}
+                </Box>
                 {voice.previewUrl ? (
-                  <AudioPreview controls preload="none" src={voice.previewUrl}>
+                  <audio controls preload="none" src={voice.previewUrl} style={{ width: 140, height: 32 }}>
                     Your browser does not support the audio element.
-                  </AudioPreview>
+                  </audio>
                 ) : (
-                  <VoiceMeta>No preview available</VoiceMeta>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
+                    No preview available
+                  </Typography>
                 )}
-              </VoiceItem>
+              </Box>
             ))}
-          </VoiceList>
+          </Stack>
         )}
-      </Section>
+      </Card>
 
-      <Section>
-        <SectionTitle>Pipeline defaults & limits</SectionTitle>
-        <FieldGrid>
-          <Field>
-            Soft limit: file size (MB)
-            <Input
+      <Card sx={{ padding: { xs: 2, sm: 2.5, md: 2.75 }, display: 'grid', gap: 1.75 }}>
+        <Typography variant="h5" component="h2" sx={{ fontSize: '1.4rem', margin: 0 }}>
+          Pipeline defaults & limits
+        </Typography>
+        <Grid container spacing={1.5}>
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              label="Soft limit: file size (MB)"
               type="number"
-              min={1}
+              fullWidth
               value={settings.maxFileSizeMB}
               onChange={(event) => setSettings((prev) => ({ ...prev, maxFileSizeMB: Number(event.target.value) }))}
+              size="small"
+              inputProps={{ min: 1 }}
             />
-          </Field>
-          <Field>
-            Soft limit: slides per deck
-            <Input
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              label="Soft limit: slides per deck"
               type="number"
-              min={1}
+              fullWidth
               value={settings.maxSlides}
               onChange={(event) => setSettings((prev) => ({ ...prev, maxSlides: Number(event.target.value) }))}
+              size="small"
+              inputProps={{ min: 1 }}
             />
-          </Field>
-          <Field>
-            Concurrent jobs per user
-            <Input
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              label="Concurrent jobs per user"
               type="number"
-              min={1}
+              fullWidth
               value={settings.concurrencyLimitPerUser}
               onChange={(event) =>
                 setSettings((prev) => ({ ...prev, concurrencyLimitPerUser: Number(event.target.value) }))
               }
+              size="small"
+              inputProps={{ min: 1 }}
             />
-          </Field>
-          <Field>
-            Default processing mode
-            <Select
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              label="Default processing mode"
+              select
+              fullWidth
               value={settings.defaultMode}
-              onChange={(event) => setSettings((prev) => ({ ...prev, defaultMode: event.target.value as 'REVIEW' | 'ONE_SHOT' }))}
+              onChange={(event) =>
+                setSettings((prev) => ({ ...prev, defaultMode: event.target.value as 'REVIEW' | 'ONE_SHOT' }))
+              }
+              size="small"
+              SelectProps={{
+                native: true,
+              }}
             >
               <option value="REVIEW">Review first</option>
               <option value="ONE_SHOT">One-shot automation</option>
-            </Select>
-          </Field>
-        </FieldGrid>
-        <Button onClick={handleSave} disabled={saving}>
-          {saving ? 'Saving…' : 'Save changes'}
-        </Button>
-      </Section>
+            </TextField>
+          </Grid>
+        </Grid>
+        <LoadingButton variant="contained" onClick={handleSave} loading={saving}>
+          Save changes
+        </LoadingButton>
+      </Card>
 
-      <Section>
-        <SectionTitle>User directory</SectionTitle>
-        <Table>
-          <thead>
-            <tr>
-              <Th>Name</Th>
-              <Th>Email</Th>
-              <Th>Role</Th>
-              <Th>Joined</Th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((user) => (
-              <tr key={user.id}>
-                <Td>{user.name}</Td>
-                <Td>{user.email}</Td>
-                <Td>{user.role}</Td>
-                <Td>{formatRelativeTime(new Date(user.createdAt).getTime())}</Td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-      </Section>
+      <Card sx={{ padding: { xs: 2, sm: 2.5, md: 2.75 }, display: 'grid', gap: 1.75 }}>
+        <Typography variant="h5" component="h2" sx={{ fontSize: '1.4rem', margin: 0 }}>
+          User directory
+        </Typography>
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  Name
+                </TableCell>
+                <TableCell sx={{ fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  Email
+                </TableCell>
+                <TableCell sx={{ fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  Role
+                </TableCell>
+                <TableCell sx={{ fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  Joined
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {users.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell>{user.name}</TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>{user.role}</TableCell>
+                  <TableCell>{formatRelativeTime(new Date(user.createdAt).getTime())}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Card>
 
-      <Section>
-        <SectionTitle>Audit log</SectionTitle>
-        <Table>
-          <thead>
-            <tr>
-              <Th>Time</Th>
-              <Th>Actor</Th>
-              <Th>Action</Th>
-              <Th>Entity</Th>
-            </tr>
-          </thead>
-          <tbody>
-            {auditLogs.map((entry) => (
-              <tr key={entry.id}>
-                <Td>{formatRelativeTime(new Date(entry.createdAt).getTime())}</Td>
-                <Td>{entry.actor ? `${entry.actor.name} (${entry.actor.email})` : 'System'}</Td>
-                <Td>{entry.action}</Td>
-                <Td>
-                  {entry.entityType} – {entry.entityId}
-                </Td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-      </Section>
-    </Page>
+      <Card sx={{ padding: { xs: 2, sm: 2.5, md: 2.75 }, display: 'grid', gap: 1.75 }}>
+        <Typography variant="h5" component="h2" sx={{ fontSize: '1.4rem', margin: 0 }}>
+          Audit log
+        </Typography>
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  Time
+                </TableCell>
+                <TableCell sx={{ fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  Actor
+                </TableCell>
+                <TableCell sx={{ fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  Action
+                </TableCell>
+                <TableCell sx={{ fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  Entity
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {auditLogs.map((entry) => (
+                <TableRow key={entry.id}>
+                  <TableCell>{formatRelativeTime(new Date(entry.createdAt).getTime())}</TableCell>
+                  <TableCell>{entry.actor ? `${entry.actor.name} (${entry.actor.email})` : 'System'}</TableCell>
+                  <TableCell>{entry.action}</TableCell>
+                  <TableCell>
+                    {entry.entityType} – {entry.entityId}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Card>
+    </Box>
   );
 }

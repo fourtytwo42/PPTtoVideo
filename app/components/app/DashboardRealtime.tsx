@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useMemo, useState } from 'react';
+import { Grid, Box } from '@mui/material';
 import { DeckUploadPanel } from '@/app/components/app/DeckUploadPanel';
 import { DeckGrid } from '@/app/components/app/DeckGrid';
 import { DashboardStats } from '@/app/components/app/DashboardStats';
@@ -28,12 +29,6 @@ interface DashboardRealtimeProps {
   initialJobs: DashboardJob[];
   initialHealth: DashboardHealth;
 }
-
-const splitGridStyle: CSSProperties = {
-  display: 'grid',
-  gap: '1.6rem',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-};
 
 const jobStatusOrder: JobStatus[] = ['RUNNING', 'QUEUED', 'SUCCEEDED', 'FAILED'];
 
@@ -119,7 +114,7 @@ export function DashboardRealtime({
   };
 
   return (
-    <>
+    <Box sx={{ display: 'grid', gap: 2 }}>
       <DashboardStats
         deckCount={stats.deckCount}
         completedCount={stats.completedCount}
@@ -129,14 +124,20 @@ export function DashboardRealtime({
         jobSnapshot={stats.jobSnapshot}
         health={health}
       />
-      <div style={splitGridStyle}>
-        <NotificationCenter notifications={notifications} />
-        <JobActivityPanel jobs={orderedJobs} syncing={syncing} onClear={handleClearJobs} clearing={clearingJobs} />
-        <DownloadCenter decks={decks} />
-      </div>
+      <Grid container spacing={2} sx={{ alignItems: 'flex-start' }}>
+        <Grid item xs={12} lg={8}>
+          <Box sx={{ display: 'grid', gap: 2 }}>
+            <NotificationCenter notifications={notifications} />
+            <JobActivityPanel jobs={orderedJobs} syncing={syncing} onClear={handleClearJobs} clearing={clearingJobs} />
+          </Box>
+        </Grid>
+        <Grid item xs={12} lg={4}>
+          <DownloadCenter decks={decks} />
+        </Grid>
+      </Grid>
       <DeckUploadPanel limits={limits} disabled={health.outOfOrder} />
       <DeckGrid decks={decks} disabled={health.outOfOrder} syncing={syncing} error={error} />
-    </>
+    </Box>
   );
 }
 

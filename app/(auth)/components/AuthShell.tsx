@@ -2,66 +2,72 @@
 
 import { ReactNode } from 'react';
 import Link from 'next/link';
-import styled from 'styled-components';
-
-const Wrapper = styled.div`
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 3rem 1.5rem;
-  background: radial-gradient(circle at top, rgba(140, 92, 255, 0.45), rgba(12, 10, 25, 0.92));
-`;
-
-const Card = styled.div`
-  width: min(420px, 100%);
-  background: rgba(15, 12, 28, 0.82);
-  border-radius: ${({ theme }) => theme.radius.lg};
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  padding: clamp(2rem, 4vw, 2.8rem);
-  display: grid;
-  gap: 1.6rem;
-  box-shadow: ${({ theme }) => theme.shadows.glow};
-`;
-
-const Heading = styled.h1`
-  margin: 0;
-  font-family: var(--font-serif);
-  font-size: clamp(1.8rem, 4vw, 2.2rem);
-`;
-
-const Lead = styled.p`
-  margin: 0;
-  color: rgba(213, 210, 255, 0.75);
-`;
-
-const Footer = styled.footer`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.85rem;
-  color: rgba(213, 210, 255, 0.65);
-`;
+import { Box, Container, Paper, Typography } from '@mui/material';
+import { Card } from '@/app/components/ui/Card';
 
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
-    <Wrapper>
-      <Card>
-        <header>
-          <Heading>DeckForge Studio Access</Heading>
-          <Lead>Sign in to orchestrate your automated slide-to-video workflows.</Lead>
-        </header>
-        {children}
-        <Footer>
-          <span>
-            Need help?{' '}
-            <Link href="/" style={{ color: '#8C5CFF', fontWeight: 600 }}>
-              View product tour
-            </Link>
-          </span>
-          <span>&copy; {new Date().getFullYear()} DeckForge</span>
-        </Footer>
-      </Card>
-    </Wrapper>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'grid',
+        placeItems: 'center',
+        padding: 3,
+        background: 'radial-gradient(circle at top, rgba(140, 92, 255, 0.45), rgba(12, 10, 25, 0.92))',
+      }}
+    >
+      <Container maxWidth="sm">
+        <Card
+          sx={{
+            width: '100%',
+            maxWidth: 420,
+            padding: { xs: 3, sm: 3.5 },
+            display: 'grid',
+            gap: 2,
+          }}
+        >
+          <Box component="header" sx={{ display: 'grid', gap: 1 }}>
+            <Typography
+              variant="h2"
+              component="h1"
+              sx={{
+                fontFamily: 'var(--font-serif)',
+                fontSize: { xs: '1.8rem', sm: '2rem', md: '2.2rem' },
+                margin: 0,
+              }}
+            >
+              DeckForge Studio Access
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'rgba(213, 210, 255, 0.75)' }}>
+              Sign in to orchestrate your automated slide-to-video workflows.
+            </Typography>
+          </Box>
+          {children}
+          <Box
+            component="footer"
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              fontSize: '0.85rem',
+              color: 'rgba(213, 210, 255, 0.65)',
+              flexWrap: 'wrap',
+              gap: 1,
+            }}
+          >
+            <Typography variant="caption" component="span">
+              Need help?{' '}
+              <Link href="/" style={{ color: '#8C5CFF', fontWeight: 600, textDecoration: 'none' }}>
+                View product tour
+              </Link>
+            </Typography>
+            <Typography variant="caption" component="span">
+              &copy; {new Date().getFullYear()} DeckForge
+            </Typography>
+          </Box>
+        </Card>
+      </Container>
+    </Box>
   );
 }
 
