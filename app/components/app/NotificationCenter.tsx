@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Typography, Stack } from '@mui/material';
+import { Box, Typography, Stack, CardContent } from '@mui/material';
 import { Card } from '@/app/components/ui/Card';
 
 interface NotificationItem {
@@ -17,16 +17,17 @@ interface NotificationCenterProps {
 
 export function NotificationCenter({ notifications }: NotificationCenterProps) {
   return (
-    <Card sx={{ padding: { xs: 2, sm: 2.5, md: 2.75 }, display: 'grid', gap: 1.5, height: '100%' }}>
-      <Box>
-        <Typography variant="h5" component="h3" sx={{ fontFamily: 'var(--font-serif)', margin: 0, mb: 0.5 }}>
-          Operations feed
-        </Typography>
-        <Typography variant="body2" sx={{ color: 'rgba(213, 210, 255, 0.7)' }}>
-          Track health alerts, job completions, and admin interventions in real time.
-        </Typography>
-      </Box>
-      <Stack spacing={1}>
+    <Card sx={{ height: '100%' }}>
+      <CardContent sx={{ padding: { xs: 2, sm: 2.5, md: 2.75 }, display: 'grid', gap: 1.5 }}>
+        <Box>
+          <Typography variant="h5" component="h3" sx={{ fontFamily: 'var(--font-serif)', margin: 0, mb: 0.5 }}>
+            Operations feed
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'rgba(213, 210, 255, 0.7)' }}>
+            Track health alerts, job completions, and admin interventions in real time.
+          </Typography>
+        </Box>
+        <Stack spacing={1}>
         {notifications.length === 0 && (
           <Typography variant="body2" sx={{ color: 'rgba(213,210,255,0.6)' }}>
             No alerts yet.
@@ -63,7 +64,8 @@ export function NotificationCenter({ notifications }: NotificationCenterProps) {
             </Typography>
           </Box>
         ))}
-      </Stack>
+        </Stack>
+      </CardContent>
     </Card>
   );
 }

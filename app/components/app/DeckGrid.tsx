@@ -10,6 +10,7 @@ import {
   Button,
   Alert,
   AlertTitle,
+  CardContent,
 } from '@mui/material';
 import { formatDuration, formatRelativeTime } from '@/lib/format';
 import type { DeckSummary } from '@/lib/decks';
@@ -93,8 +94,9 @@ export function DeckGrid({ decks, disabled, syncing = false, error }: DeckGridPr
         )}
       </Stack>
       {sortedDecks.map((deck) => (
-        <Card key={deck.id} sx={{ padding: { xs: 2, sm: 2.5, md: 3 }, display: 'grid', gap: 1.75 }}>
-          <Box
+        <Card key={deck.id}>
+          <CardContent sx={{ padding: { xs: 2, sm: 2.5, md: 3 }, display: 'grid', gap: 1.75 }}>
+            <Box
             sx={{
               display: 'flex',
               flexWrap: 'wrap',
@@ -269,6 +271,7 @@ export function DeckGrid({ decks, disabled, syncing = false, error }: DeckGridPr
               </Button>
             )}
           </Stack>
+          </CardContent>
         </Card>
       ))}
     </Box>

@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Typography, Stack, Chip, LinearProgress } from '@mui/material';
+import { Box, Typography, Stack, Chip, LinearProgress, CardContent } from '@mui/material';
 import { formatRelativeTime } from '@/lib/format';
 import type { DashboardJob } from '@/app/hooks/useDashboardProgress';
 import { Card } from '@/app/components/ui/Card';
@@ -35,8 +35,9 @@ const progressForStatus = (job: DashboardJob) => {
 
 export function JobActivityPanel({ jobs, syncing, onClear, clearing }: JobActivityPanelProps) {
   return (
-    <Card sx={{ padding: { xs: 2, sm: 2.5, md: 2.75 }, display: 'grid', gap: 1.25 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+    <Card>
+      <CardContent sx={{ padding: { xs: 2, sm: 2.5, md: 2.75 }, display: 'grid', gap: 1.25 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
         <Box>
           <Typography variant="h5" component="h3" sx={{ fontFamily: 'var(--font-serif)', margin: 0, mb: 0.5 }}>
             Job activity
@@ -129,7 +130,8 @@ export function JobActivityPanel({ jobs, syncing, onClear, clearing }: JobActivi
             </Box>
           </Box>
         ))}
-      </Stack>
+        </Stack>
+      </CardContent>
     </Card>
   );
 }

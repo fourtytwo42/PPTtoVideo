@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Typography, Stack, Button } from '@mui/material';
+import { Box, Typography, Stack, Button, CardContent } from '@mui/material';
 import Link from 'next/link';
 import type { DeckSummary } from '@/lib/decks';
 import { formatDuration, formatRelativeTime } from '@/lib/format';
@@ -20,17 +20,18 @@ export function DownloadCenter({ decks }: DownloadCenterProps) {
     .slice(0, 6);
 
   return (
-    <Card sx={{ padding: { xs: 2, sm: 2.5, md: 2.75 }, display: 'grid', gap: 1.25 }}>
-      <Box>
-        <Typography variant="h5" component="h3" sx={{ fontFamily: 'var(--font-serif)', margin: 0, mb: 0.5 }}>
-          Downloads
-        </Typography>
-        <Typography variant="body2" sx={{ color: 'rgba(213, 210, 255, 0.7)' }}>
-          Grab final renders without leaving the dashboard. Recent MP4 builds appear here as soon as assembly
-          completes.
-        </Typography>
-      </Box>
-      <Stack spacing={1}>
+    <Card>
+      <CardContent sx={{ padding: { xs: 2, sm: 2.5, md: 2.75 }, display: 'grid', gap: 1.25 }}>
+        <Box>
+          <Typography variant="h5" component="h3" sx={{ fontFamily: 'var(--font-serif)', margin: 0, mb: 0.5 }}>
+            Downloads
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'rgba(213, 210, 255, 0.7)' }}>
+            Grab final renders without leaving the dashboard. Recent MP4 builds appear here as soon as assembly
+            completes.
+          </Typography>
+        </Box>
+        <Stack spacing={1}>
         {readyDecks.length === 0 && (
           <Typography variant="body2" sx={{ color: 'rgba(213,210,255,0.6)' }}>
             No final renders yet. Finish assembling to see downloads.
@@ -90,7 +91,8 @@ export function DownloadCenter({ decks }: DownloadCenterProps) {
             </Stack>
           </Box>
         ))}
-      </Stack>
+        </Stack>
+      </CardContent>
     </Card>
   );
 }

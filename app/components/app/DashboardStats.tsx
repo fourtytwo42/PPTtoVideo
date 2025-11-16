@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, CardContent } from '@mui/material';
 import { useMemo } from 'react';
 import { formatDuration } from '@/lib/format';
 import { Card } from '@/app/components/ui/Card';
@@ -48,69 +48,79 @@ export function DashboardStats({
       }}
     >
       <Box>
-        <Card sx={{ padding: { xs: 1.5, sm: 1.75, md: 2 }, display: 'grid', gap: 0.5 }}>
-          <Typography variant="caption" sx={{ letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-            Decks managed
-          </Typography>
-          <Typography variant="h5" component="span" sx={{ fontSize: '1.5rem', fontWeight: 600 }}>
-            {deckCount}
-          </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>
-            {completedCount} complete • {inFlightCount} in-flight
-          </Typography>
+        <Card>
+          <CardContent sx={{ padding: { xs: 1.5, sm: 1.75, md: 2 }, display: 'grid', gap: 0.5 }}>
+            <Typography variant="caption" sx={{ letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+              Decks managed
+            </Typography>
+            <Typography variant="h5" component="span" sx={{ fontSize: '1.5rem', fontWeight: 600 }}>
+              {deckCount}
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>
+              {completedCount} complete • {inFlightCount} in-flight
+            </Typography>
+          </CardContent>
         </Card>
       </Box>
       <Box>
-        <Card sx={{ padding: { xs: 1.5, sm: 1.75, md: 2 }, display: 'grid', gap: 0.5 }}>
-          <Typography variant="caption" sx={{ letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-            Total slides processed
-          </Typography>
-          <Typography variant="h5" component="span" sx={{ fontSize: '1.5rem', fontWeight: 600 }}>
-            {slideCount}
-          </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>
-            Across {deckCount} decks
-          </Typography>
+        <Card>
+          <CardContent sx={{ padding: { xs: 1.5, sm: 1.75, md: 2 }, display: 'grid', gap: 0.5 }}>
+            <Typography variant="caption" sx={{ letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+              Total slides processed
+            </Typography>
+            <Typography variant="h5" component="span" sx={{ fontSize: '1.5rem', fontWeight: 600 }}>
+              {slideCount}
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>
+              Across {deckCount} decks
+            </Typography>
+          </CardContent>
         </Card>
       </Box>
       <Box>
-        <Card sx={{ padding: { xs: 1.5, sm: 1.75, md: 2 }, display: 'grid', gap: 0.5 }}>
-          <Typography variant="caption" sx={{ letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-            Runtime delivered
-          </Typography>
-          <Typography variant="h5" component="span" sx={{ fontSize: '1.5rem', fontWeight: 600 }}>
-            {formatDuration(deliveredSeconds)}
-          </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>
-            Final MP4 outputs
-          </Typography>
+        <Card>
+          <CardContent sx={{ padding: { xs: 1.5, sm: 1.75, md: 2 }, display: 'grid', gap: 0.5 }}>
+            <Typography variant="caption" sx={{ letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+              Runtime delivered
+            </Typography>
+            <Typography variant="h5" component="span" sx={{ fontSize: '1.5rem', fontWeight: 600 }}>
+              {formatDuration(deliveredSeconds)}
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>
+              Final MP4 outputs
+            </Typography>
+          </CardContent>
         </Card>
       </Box>
       <Box>
-        <Card sx={{ padding: { xs: 1.5, sm: 1.75, md: 2 }, display: 'grid', gap: 0.5 }}>
-          <Typography variant="caption" sx={{ letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-            Pipeline health
-          </Typography>
-          <Typography variant="h5" component="span" sx={{ fontSize: '1.5rem', fontWeight: 600 }}>
-            {successRate}
-          </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>
-            {jobSnapshot.running} running • {jobSnapshot.queued} queued • {jobSnapshot.failedToday} failed today
-          </Typography>
+        <Card>
+          <CardContent sx={{ padding: { xs: 1.5, sm: 1.75, md: 2 }, display: 'grid', gap: 0.5 }}>
+            <Typography variant="caption" sx={{ letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+              Pipeline health
+            </Typography>
+            <Typography variant="h5" component="span" sx={{ fontSize: '1.5rem', fontWeight: 600 }}>
+              {successRate}
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>
+              {jobSnapshot.running} running • {jobSnapshot.queued} queued • {jobSnapshot.failedToday} failed today
+            </Typography>
+          </CardContent>
         </Card>
       </Box>
       <Box>
-        <Card sx={{ padding: { xs: 1.5, sm: 1.75, md: 2 }, display: 'grid', gap: 0.5 }}>
-          <Typography variant="caption" sx={{ letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-            Throughput / hr
-          </Typography>
-          <Typography variant="h5" component="span" sx={{ fontSize: '1.5rem', fontWeight: 600 }}>
-            {jobSnapshot.throughputPerHour.toFixed(1)}
-          </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>
-            Avg pipeline {formatDuration(jobSnapshot.avgPipelineSeconds)} •{' '}
-            {health.outOfOrder ? 'attention required' : 'systems nominal'}
-          </Typography>
+        <Card>
+          <CardContent sx={{ padding: { xs: 1.5, sm: 1.75, md: 2 }, display: 'grid', gap: 0.5 }}>
+            <Typography variant="caption" sx={{ letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+              Throughput / hr
+            </Typography>
+            <Typography variant="h5" component="span" sx={{ fontSize: '1.5rem', fontWeight: 600 }}>
+              {jobSnapshot.throughputPerHour.toFixed(1)}
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>
+              Avg pipeline {formatDuration(jobSnapshot.avgPipelineSeconds)} •{' '}
+              {health.outOfOrder ? 'attention required' : 'systems nominal'}
+            </Typography>
+          </CardContent>
         </Card>
       </Box>
     </Box>

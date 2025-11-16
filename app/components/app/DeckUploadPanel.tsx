@@ -14,6 +14,7 @@ import {
   Select,
   MenuItem,
   Stack,
+  CardContent,
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { Card } from '@/app/components/ui/Card';
@@ -111,8 +112,9 @@ export function DeckUploadPanel({ limits, disabled }: DeckUploadPanelProps) {
   };
 
   return (
-    <Card sx={{ padding: { xs: 2, sm: 2.5, md: 3 }, display: 'grid', gap: 2 }}>
-      <Box>
+    <Card>
+      <CardContent sx={{ padding: { xs: 2, sm: 2.5, md: 3 }, display: 'grid', gap: 2 }}>
+        <Box>
         <Typography variant="h4" component="h2" sx={{ fontFamily: 'var(--font-serif)', mb: 0.75 }}>
           Upload new decks
         </Typography>
@@ -302,6 +304,7 @@ export function DeckUploadPanel({ limits, disabled }: DeckUploadPanelProps) {
           Voice: {voiceOptions.find((voice) => voice.id === voiceId)?.name ?? 'Not set'}
         </Typography>
       </Box>
+      </CardContent>
     </Card>
   );
 }
