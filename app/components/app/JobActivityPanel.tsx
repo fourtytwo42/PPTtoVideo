@@ -13,13 +13,6 @@ interface JobActivityPanelProps {
   clearing?: boolean;
 }
 
-const statusVariant = (status: string): 'default' | 'primary' | 'success' | 'error' => {
-  if (status === 'RUNNING') return 'primary';
-  if (status === 'FAILED') return 'error';
-  if (status === 'SUCCEEDED') return 'success';
-  return 'default';
-};
-
 const statusColor = (status: string): string => {
   if (status === 'SUCCEEDED') return '#8AFFEA';
   if (status === 'FAILED') return '#FF9BB4';

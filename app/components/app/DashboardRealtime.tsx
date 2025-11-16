@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Grid, Box } from '@mui/material';
+import { Box } from '@mui/material';
 import { DeckUploadPanel } from '@/app/components/app/DeckUploadPanel';
 import { DeckGrid } from '@/app/components/app/DeckGrid';
 import { DashboardStats } from '@/app/components/app/DashboardStats';
@@ -124,17 +124,20 @@ export function DashboardRealtime({
         jobSnapshot={stats.jobSnapshot}
         health={health}
       />
-      <Grid container spacing={2} sx={{ alignItems: 'flex-start' }}>
-        <Grid item xs={12} lg={8}>
-          <Box sx={{ display: 'grid', gap: 2 }}>
-            <NotificationCenter notifications={notifications} />
-            <JobActivityPanel jobs={orderedJobs} syncing={syncing} onClear={handleClearJobs} clearing={clearingJobs} />
-          </Box>
-        </Grid>
-        <Grid item xs={12} lg={4}>
-          <DownloadCenter decks={decks} />
-        </Grid>
-      </Grid>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', lg: '2fr 1fr' },
+          gap: 2,
+          alignItems: 'flex-start',
+        }}
+      >
+        <Box sx={{ display: 'grid', gap: 2 }}>
+          <NotificationCenter notifications={notifications} />
+          <JobActivityPanel jobs={orderedJobs} syncing={syncing} onClear={handleClearJobs} clearing={clearingJobs} />
+        </Box>
+        <DownloadCenter decks={decks} />
+      </Box>
       <DeckUploadPanel limits={limits} disabled={health.outOfOrder} />
       <DeckGrid decks={decks} disabled={health.outOfOrder} syncing={syncing} error={error} />
     </Box>

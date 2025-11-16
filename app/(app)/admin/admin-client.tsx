@@ -4,21 +4,16 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   Box,
   Typography,
-  Grid,
   TextField,
-  Button,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
-  Chip,
   Alert,
   AlertTitle,
   Stack,
-  CircularProgress,
   Link as MuiLink,
 } from '@mui/material';
 import { formatRelativeTime } from '@/lib/format';
@@ -418,25 +413,23 @@ export default function AdminConsoleClient({ users, auditLogs }: AdminConsoleCli
         <Typography variant="h5" component="h2" sx={{ fontSize: '1.4rem', margin: 0 }}>
           OpenAI configuration
         </Typography>
-        <Grid container spacing={1.5}>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              label="API key"
-              type="password"
-              fullWidth
-              value={settings.openaiApiKey}
-              onChange={(event) => setSettings((prev) => ({ ...prev, openaiApiKey: event.target.value }))}
-              size="small"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
+          <TextField
+            label="API key"
+            type="password"
+            fullWidth
+            value={settings.openaiApiKey}
+            onChange={(event) => setSettings((prev) => ({ ...prev, openaiApiKey: event.target.value }))}
+            size="small"
+          />
+          <Box>
             <TextField
               label="Default model"
               fullWidth
               value={settings.defaultOpenAIModel}
               onChange={(event) => setSettings((prev) => ({ ...prev, defaultOpenAIModel: event.target.value }))}
               size="small"
-              list="openai-models"
+              inputProps={{ list: 'openai-models' }}
             />
             <datalist id="openai-models">
               {openAiAllowlistText
@@ -447,8 +440,8 @@ export default function AdminConsoleClient({ users, auditLogs }: AdminConsoleCli
                   <option key={model} value={model} />
                 ))}
             </datalist>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
         <TextField
           label="Allowed models (one per line)"
           multiline
@@ -473,25 +466,23 @@ export default function AdminConsoleClient({ users, auditLogs }: AdminConsoleCli
         <Typography variant="h5" component="h2" sx={{ fontSize: '1.4rem', margin: 0 }}>
           ElevenLabs configuration
         </Typography>
-        <Grid container spacing={1.5}>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              label="API key"
-              type="password"
-              fullWidth
-              value={settings.elevenlabsApiKey}
-              onChange={(event) => setSettings((prev) => ({ ...prev, elevenlabsApiKey: event.target.value }))}
-              size="small"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
+          <TextField
+            label="API key"
+            type="password"
+            fullWidth
+            value={settings.elevenlabsApiKey}
+            onChange={(event) => setSettings((prev) => ({ ...prev, elevenlabsApiKey: event.target.value }))}
+            size="small"
+          />
+          <Box>
             <TextField
               label="Default TTS model"
               fullWidth
               value={settings.defaultTTSModel}
               onChange={(event) => setSettings((prev) => ({ ...prev, defaultTTSModel: event.target.value }))}
               size="small"
-              list="tts-models"
+              inputProps={{ list: 'tts-models' }}
             />
             <datalist id="tts-models">
               {ttsAllowlistText
@@ -502,8 +493,8 @@ export default function AdminConsoleClient({ users, auditLogs }: AdminConsoleCli
                   <option key={model} value={model} />
                 ))}
             </datalist>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
         <TextField
           label="Allowed TTS models (one per line)"
           multiline
@@ -590,61 +581,59 @@ export default function AdminConsoleClient({ users, auditLogs }: AdminConsoleCli
         <Typography variant="h5" component="h2" sx={{ fontSize: '1.4rem', margin: 0 }}>
           Pipeline defaults & limits
         </Typography>
-        <Grid container spacing={1.5}>
-          <Grid item xs={12} sm={6} md={3}>
-            <TextField
-              label="Soft limit: file size (MB)"
-              type="number"
-              fullWidth
-              value={settings.maxFileSizeMB}
-              onChange={(event) => setSettings((prev) => ({ ...prev, maxFileSizeMB: Number(event.target.value) }))}
-              size="small"
-              inputProps={{ min: 1 }}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <TextField
-              label="Soft limit: slides per deck"
-              type="number"
-              fullWidth
-              value={settings.maxSlides}
-              onChange={(event) => setSettings((prev) => ({ ...prev, maxSlides: Number(event.target.value) }))}
-              size="small"
-              inputProps={{ min: 1 }}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <TextField
-              label="Concurrent jobs per user"
-              type="number"
-              fullWidth
-              value={settings.concurrencyLimitPerUser}
-              onChange={(event) =>
-                setSettings((prev) => ({ ...prev, concurrencyLimitPerUser: Number(event.target.value) }))
-              }
-              size="small"
-              inputProps={{ min: 1 }}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <TextField
-              label="Default processing mode"
-              select
-              fullWidth
-              value={settings.defaultMode}
-              onChange={(event) =>
-                setSettings((prev) => ({ ...prev, defaultMode: event.target.value as 'REVIEW' | 'ONE_SHOT' }))
-              }
-              size="small"
-              SelectProps={{
-                native: true,
-              }}
-            >
-              <option value="REVIEW">Review first</option>
-              <option value="ONE_SHOT">One-shot automation</option>
-            </TextField>
-          </Grid>
-        </Grid>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr 1fr' },
+            gap: 1.5,
+          }}
+        >
+          <TextField
+            label="Soft limit: file size (MB)"
+            type="number"
+            fullWidth
+            value={settings.maxFileSizeMB}
+            onChange={(event) => setSettings((prev) => ({ ...prev, maxFileSizeMB: Number(event.target.value) }))}
+            size="small"
+            inputProps={{ min: 1 }}
+          />
+          <TextField
+            label="Soft limit: slides per deck"
+            type="number"
+            fullWidth
+            value={settings.maxSlides}
+            onChange={(event) => setSettings((prev) => ({ ...prev, maxSlides: Number(event.target.value) }))}
+            size="small"
+            inputProps={{ min: 1 }}
+          />
+          <TextField
+            label="Concurrent jobs per user"
+            type="number"
+            fullWidth
+            value={settings.concurrencyLimitPerUser}
+            onChange={(event) =>
+              setSettings((prev) => ({ ...prev, concurrencyLimitPerUser: Number(event.target.value) }))
+            }
+            size="small"
+            inputProps={{ min: 1 }}
+          />
+          <TextField
+            label="Default processing mode"
+            select
+            fullWidth
+            value={settings.defaultMode}
+            onChange={(event) =>
+              setSettings((prev) => ({ ...prev, defaultMode: event.target.value as 'REVIEW' | 'ONE_SHOT' }))
+            }
+            size="small"
+            SelectProps={{
+              native: true,
+            }}
+          >
+            <option value="REVIEW">Review first</option>
+            <option value="ONE_SHOT">One-shot automation</option>
+          </TextField>
+        </Box>
         <LoadingButton variant="contained" onClick={handleSave} loading={saving}>
           Save changes
         </LoadingButton>

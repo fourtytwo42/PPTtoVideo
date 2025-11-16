@@ -8,7 +8,6 @@ import {
   LinearProgress,
   Stack,
   Button,
-  ButtonGroup,
   Alert,
   AlertTitle,
 } from '@mui/material';
@@ -42,12 +41,6 @@ export function DeckGrid({ decks, disabled, syncing = false, error }: DeckGridPr
   };
 
   const progressForDeck = (deck: DeckSummary) => deck.overallProgress;
-
-  const stageVariant = (progress: number): 'default' | 'primary' | 'success' => {
-    if (progress >= 0.999) return 'success';
-    if (progress > 0) return 'primary';
-    return 'default';
-  };
 
   const stageColor = (progress: number): string => {
     if (progress >= 0.999) return '#8AFFEA';

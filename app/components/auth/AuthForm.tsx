@@ -1,32 +1,24 @@
 'use client';
 
-import { Box, BoxProps } from '@mui/material';
-import { ReactNode } from 'react';
+import { styled } from '@mui/material';
+import { ReactNode, FormEvent } from 'react';
 
-export interface AuthFormProps extends BoxProps {
+export interface AuthFormProps {
   children: ReactNode;
-  onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void;
+  onSubmit?: (e: FormEvent<HTMLFormElement>) => void;
 }
+
+const Form = styled('form')({
+  display: 'grid',
+  gap: 16,
+});
 
 /**
  * Shared form container for authentication pages.
  * Provides consistent layout and spacing.
  */
-export function AuthForm({ children, onSubmit, ...props }: AuthFormProps) {
-  return (
-    <Box
-      component="form"
-      onSubmit={onSubmit}
-      sx={{
-        display: 'grid',
-        gap: 2,
-        ...props.sx,
-      }}
-      {...props}
-    >
-      {children}
-    </Box>
-  );
+export function AuthForm({ children, onSubmit }: AuthFormProps) {
+  return <Form onSubmit={onSubmit}>{children}</Form>;
 }
 
 export default AuthForm;

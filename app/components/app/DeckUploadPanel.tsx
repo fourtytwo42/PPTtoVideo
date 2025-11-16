@@ -6,7 +6,6 @@ import {
   Box,
   Typography,
   Button,
-  Grid,
   Chip,
   Alert,
   AlertTitle,
@@ -123,74 +122,72 @@ export function DeckUploadPanel({ limits, disabled }: DeckUploadPanelProps) {
         </Typography>
       </Box>
 
-      <Grid container spacing={1.5}>
-        <Grid item xs={12} sm={6} md={3}>
-          <FormControl fullWidth variant="outlined" size="small">
-            <InputLabel>Processing mode</InputLabel>
-            <Select
-              value={processingMode}
-              onChange={(event) => setProcessingMode(event.target.value as Limits['defaultMode'])}
-              disabled={disabled || uploading}
-              label="Processing mode"
-            >
-              <MenuItem value="REVIEW">Review first</MenuItem>
-              <MenuItem value="ONE_SHOT">One-shot automation</MenuItem>
-            </Select>
-          </FormControl>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <FormControl fullWidth variant="outlined" size="small">
-            <InputLabel>Script model</InputLabel>
-            <Select
-              value={scriptModel}
-              onChange={(event) => setScriptModel(event.target.value)}
-              disabled={disabled || uploading}
-              label="Script model"
-            >
-              {scriptModelOptions.map((model) => (
-                <MenuItem key={model} value={model}>
-                  {model}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <FormControl fullWidth variant="outlined" size="small">
-            <InputLabel>TTS model</InputLabel>
-            <Select
-              value={ttsModel}
-              onChange={(event) => setTtsModel(event.target.value)}
-              disabled={disabled || uploading}
-              label="TTS model"
-            >
-              {ttsModelOptions.map((model) => (
-                <MenuItem key={model} value={model}>
-                  {model}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <FormControl fullWidth variant="outlined" size="small">
-            <InputLabel>Voice</InputLabel>
-            <Select
-              value={voiceId}
-              onChange={(event) => setVoiceId(event.target.value)}
-              disabled={disabled || uploading || voiceOptions.length === 0}
-              label="Voice"
-            >
-              {voiceOptions.length === 0 && <MenuItem value="">No voices available</MenuItem>}
-              {voiceOptions.map((voice) => (
-                <MenuItem key={voice.id} value={voice.id}>
-                  {voice.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-      </Grid>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(4, 1fr)' },
+          gap: 1.5,
+        }}
+      >
+        <FormControl fullWidth variant="outlined" size="small">
+          <InputLabel>Processing mode</InputLabel>
+          <Select
+            value={processingMode}
+            onChange={(event) => setProcessingMode(event.target.value as Limits['defaultMode'])}
+            disabled={disabled || uploading}
+            label="Processing mode"
+          >
+            <MenuItem value="REVIEW">Review first</MenuItem>
+            <MenuItem value="ONE_SHOT">One-shot automation</MenuItem>
+          </Select>
+        </FormControl>
+        <FormControl fullWidth variant="outlined" size="small">
+          <InputLabel>Script model</InputLabel>
+          <Select
+            value={scriptModel}
+            onChange={(event) => setScriptModel(event.target.value)}
+            disabled={disabled || uploading}
+            label="Script model"
+          >
+            {scriptModelOptions.map((model) => (
+              <MenuItem key={model} value={model}>
+                {model}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl fullWidth variant="outlined" size="small">
+          <InputLabel>TTS model</InputLabel>
+          <Select
+            value={ttsModel}
+            onChange={(event) => setTtsModel(event.target.value)}
+            disabled={disabled || uploading}
+            label="TTS model"
+          >
+            {ttsModelOptions.map((model) => (
+              <MenuItem key={model} value={model}>
+                {model}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl fullWidth variant="outlined" size="small">
+          <InputLabel>Voice</InputLabel>
+          <Select
+            value={voiceId}
+            onChange={(event) => setVoiceId(event.target.value)}
+            disabled={disabled || uploading || voiceOptions.length === 0}
+            label="Voice"
+          >
+            {voiceOptions.length === 0 && <MenuItem value="">No voices available</MenuItem>}
+            {voiceOptions.map((voice) => (
+              <MenuItem key={voice.id} value={voice.id}>
+                {voice.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
 
       <Box
         component="label"

@@ -81,7 +81,7 @@ export function RegisterForm() {
         value={password}
         onChange={(event) => setPassword(event.target.value)}
         required
-        minLength={8}
+        inputProps={{ minLength: 8 }}
         autoComplete="new-password"
         disabled={loading}
         helperText="Must be at least 8 characters"

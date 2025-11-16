@@ -118,7 +118,9 @@ export const muiTheme = createTheme({
     '0 72px 216px rgba(0, 0, 0, 1)',
     '0 76px 228px rgba(0, 0, 0, 1)',
     '0 80px 240px rgba(0, 0, 0, 1)',
-  ],
+    '0 84px 252px rgba(0, 0, 0, 1)',
+    '0 88px 264px rgba(0, 0, 0, 1)',
+  ] as ThemeOptions['shadows'],
   components: {
     MuiButton: {
       styleOverrides: {

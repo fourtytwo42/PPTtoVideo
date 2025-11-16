@@ -4,7 +4,6 @@ import { getCurrentUser } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { buildDeckSummary } from '@/lib/decks';
 import { PageHeader } from '@/app/components/ui/PageHeader';
-import { Box } from '@mui/material';
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -141,7 +140,7 @@ export default async function DashboardPage() {
   }));
 
   return (
-    <Box component="section" sx={{ display: 'grid', gap: 3 }}>
+    <section style={{ display: 'grid', gap: '1.5rem' }}>
       <PageHeader
         title="Operations dashboard"
         subtitle="Monitor deck ingestion, tune AI narration, and orchestrate high-fidelity video renders without babysitting progress bars."
@@ -153,6 +152,6 @@ export default async function DashboardPage() {
         initialJobs={jobSnapshots}
         initialHealth={health}
       />
-    </Box>
+    </section>
   );
 }

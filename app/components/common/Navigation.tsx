@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Box, Button, Container, Stack, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Button, Container, Stack } from '@mui/material';
 
 const navLinks = [
   { href: '#hero', label: 'Overview' },

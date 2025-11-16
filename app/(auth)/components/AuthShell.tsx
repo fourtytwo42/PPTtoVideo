@@ -2,7 +2,7 @@
 
 import { ReactNode } from 'react';
 import Link from 'next/link';
-import { Box, Container, Paper, Typography } from '@mui/material';
+import { Box, Container, Typography } from '@mui/material';
 import { Card } from '@/app/components/ui/Card';
 
 export function AuthShell({ children }: { children: ReactNode }) {

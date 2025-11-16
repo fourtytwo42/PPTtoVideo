@@ -1,6 +1,6 @@
 'use client';
 
-import { Grid, Typography, Box } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { useMemo } from 'react';
 import { formatDuration } from '@/lib/format';
 import { Card } from '@/app/components/ui/Card';
@@ -40,8 +40,14 @@ export function DashboardStats({
   }, [jobSnapshot.failedToday, jobSnapshot.succeededToday]);
 
   return (
-    <Grid container spacing={1.5}>
-      <Grid item xs={12} sm={6} md={4} lg={2.4}>
+    <Box
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr', lg: 'repeat(5, 1fr)' },
+        gap: 1.5,
+      }}
+    >
+      <Box>
         <Card sx={{ padding: { xs: 1.5, sm: 1.75, md: 2 }, display: 'grid', gap: 0.5 }}>
           <Typography variant="caption" sx={{ letterSpacing: '0.12em', textTransform: 'uppercase' }}>
             Decks managed
@@ -53,8 +59,8 @@ export function DashboardStats({
             {completedCount} complete • {inFlightCount} in-flight
           </Typography>
         </Card>
-      </Grid>
-      <Grid item xs={12} sm={6} md={4} lg={2.4}>
+      </Box>
+      <Box>
         <Card sx={{ padding: { xs: 1.5, sm: 1.75, md: 2 }, display: 'grid', gap: 0.5 }}>
           <Typography variant="caption" sx={{ letterSpacing: '0.12em', textTransform: 'uppercase' }}>
             Total slides processed
@@ -66,8 +72,8 @@ export function DashboardStats({
             Across {deckCount} decks
           </Typography>
         </Card>
-      </Grid>
-      <Grid item xs={12} sm={6} md={4} lg={2.4}>
+      </Box>
+      <Box>
         <Card sx={{ padding: { xs: 1.5, sm: 1.75, md: 2 }, display: 'grid', gap: 0.5 }}>
           <Typography variant="caption" sx={{ letterSpacing: '0.12em', textTransform: 'uppercase' }}>
             Runtime delivered
@@ -79,8 +85,8 @@ export function DashboardStats({
             Final MP4 outputs
           </Typography>
         </Card>
-      </Grid>
-      <Grid item xs={12} sm={6} md={4} lg={2.4}>
+      </Box>
+      <Box>
         <Card sx={{ padding: { xs: 1.5, sm: 1.75, md: 2 }, display: 'grid', gap: 0.5 }}>
           <Typography variant="caption" sx={{ letterSpacing: '0.12em', textTransform: 'uppercase' }}>
             Pipeline health
@@ -92,8 +98,8 @@ export function DashboardStats({
             {jobSnapshot.running} running • {jobSnapshot.queued} queued • {jobSnapshot.failedToday} failed today
           </Typography>
         </Card>
-      </Grid>
-      <Grid item xs={12} sm={6} md={4} lg={2.4}>
+      </Box>
+      <Box>
         <Card sx={{ padding: { xs: 1.5, sm: 1.75, md: 2 }, display: 'grid', gap: 0.5 }}>
           <Typography variant="caption" sx={{ letterSpacing: '0.12em', textTransform: 'uppercase' }}>
             Throughput / hr
@@ -106,7 +112,7 @@ export function DashboardStats({
             {health.outOfOrder ? 'attention required' : 'systems nominal'}
           </Typography>
         </Card>
-      </Grid>
-    </Grid>
+      </Box>
+    </Box>
   );
 }
